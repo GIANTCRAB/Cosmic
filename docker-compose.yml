@@ -17,6 +17,12 @@ services:
       - ./config.yaml:/opt/server/config.yaml
       - ./scripts:/opt/server/scripts
       - ./wz:/opt/server/wz
+    env_file:
+      # Sensitive values (e.g. the external HOST IP) are loaded from this file,
+      # which is gitignored. Copy cosmic.env.example to cosmic.env and fill it in.
+      # Entries here override their counterparts in config.yaml.
+      - path: cosmic.env
+        required: false
     environment:
       DB_HOST: "db" ## Remember if this is present it will OVERRIDE the host in the config.yaml, if you put here anything other than db, you'll need to change the config.yaml jdbc string to port 3307, and not port 3306
     

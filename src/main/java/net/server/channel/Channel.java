@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package net.server.channel;
 
 import client.Character;
+import config.HostResolver;
 import config.YamlConfig;
 import constants.id.MapId;
 import net.netty.ChannelServer;
@@ -129,7 +130,7 @@ public final class Channel {
         this.ongoingStartTime = startTime + 10000;  // rude approach to a world's last channel boot time, placeholder for the 1st wedding reservation ever
         this.mapManager = new MapManager(null, world, channel);
         this.port = BASE_PORT + (this.channel - 1) + (world * 100);
-        this.ip = YamlConfig.config.server.HOST + ":" + port;
+        this.ip = HostResolver.resolve(System.getenv("HOST"), YamlConfig.config.server.HOST) + ":" + port;
 
         ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
         this.merchRlock = rwLock.readLock();

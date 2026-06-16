@@ -93,6 +93,15 @@ Support for Docker is also provided out of the box, as an alternative to running
 
 Making changes becomes a bit more tedious though as you have to rebuild the server image via `docker compose up --build`.
 
+##### Sensitive configuration (e.g. the external IP)
+Some values are sensitive and shouldn't be committed to the repository or placed directly in `docker-compose.yml`. The `HOST` (external/WAN IP) can instead be injected via an environment file:
+
+1. Copy the template: `cp cosmic.env.example cosmic.env`
+2. Set your value in `cosmic.env`, e.g. `HOST=203.0.113.10`
+3. Run `docker compose up` as usual.
+
+`cosmic.env` is gitignored (see `.gitignore`), so it never gets committed. Its values override the corresponding fields in `config.yaml`. The file is optional — if it doesn't exist, `config.yaml` is used as-is.
+
 #### Jar
 Another option is to start the server from a terminal by running a jar file. You first need to build the jar file from source which requires [Maven](https://maven.apache.org/). Fortunately, [Maven Wrapper](https://maven.apache.org/wrapper/) is provided so you don't have to install Maven separately.
 
@@ -135,6 +144,8 @@ Some slightly more advanced concepts that might be useful once you're up and run
 You don't have to host the server on your local machine to play. It's possible to host on a remote server such as a VPS or a dedicated server.
 
 I leave it to you to figure out the server hosting part, but once you have that running you'll need to edit the client ip to point to your remote server ip.
+
+On the server side, set the same external IP via the `HOST` setting so channels advertise the correct address to clients. When running with Docker, put it in the gitignored `cosmic.env` file (see _Sensitive configuration_ under Docker above) so it stays out of `docker-compose.yml` and out of git. When running outside Docker, either set it as the `HOST` environment variable or edit `server.HOST` in `config.yaml`.
 
 ### WZ files
 WZ files are the asset/data files required by the client and server. Typically, the [HaRepacker-resurrected](https://github.com/lastbattle/Harepacker-resurrected) tool is used to manage (view, edit, export) the .wz files.

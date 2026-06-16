@@ -18,6 +18,9 @@
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
+# Sensitive runtime config loaded by docker-compose via env_file
+/cosmic.env
+
 # Database
 database/docker-db-data
 database/docker-pg-db-data
