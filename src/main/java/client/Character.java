@@ -40,6 +40,7 @@ import client.keybind.KeyBinding;
 import client.keybind.QuickslotBinding;
 import client.newyear.NewYearCardRecord;
 import client.processor.action.PetAutopotProcessor;
+import client.processor.HardcoreProcessor;
 import client.processor.npc.FredrickProcessor;
 import config.YamlConfig;
 import constants.game.ExpTable;
@@ -237,6 +238,7 @@ public class Character extends AbstractCharacterObject {
     private String linkedName = null;
     private boolean finishedDojoTutorial;
     private boolean usedStorage = false;
+    private boolean pendingHardcoreDeletion = false;
     private String name;
     private String chalktext;
     private String commandtext;
@@ -5050,6 +5052,40 @@ public class Character extends AbstractCharacterObject {
         usedStorage = true;
     }
 
+    public boolean isPendingHardcoreDeletion() {
+        return pendingHardcoreDeletion;
+    }
+
+    public void markPendingHardcoreDeletion() {
+        pendingHardcoreDeletion = true;
+    }
+
+    public void flushStorage() {
+        if (storage != null && usedStorage) {
+            try (Connection con = DatabaseConnection.getConnection()) {
+                con.setAutoCommit(false);
+                con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+                try {
+                    storage.saveToDB(con);
+                    usedStorage = false;
+                    con.commit();
+                } catch (Exception e) {
+                    con.rollback();
+                    throw e;
+                } finally {
+                    con.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+                    con.setAutoCommit(true);
+                }
+            } catch (Exception e) {
+                log.error("Error saving storage for chr {}", name, e);
+            }
+        }
+    }
+
+    public boolean deletePermanently() {
+        return deleteCharFromDB(this, accountid);
+    }
+
     public List<Ring> getFriendshipRings() {
         Collections.sort(friendshipRings);
         return friendshipRings;
@@ -7457,6 +7493,10 @@ public class Character extends AbstractCharacterObject {
             return;
         }
 
+        if (HardcoreProcessor.processPermanentDeathIfEnabled(this)) {
+            return;
+        }
+
         cancelAllBuffs(false);
         dispelDebuffs();
         lastDeathtime = Server.getInstance().getCurrentTime();
@@ -8246,6 +8286,9 @@ public class Character extends AbstractCharacterObject {
             return;
         }
 
+        if (pendingHardcoreDeletion) {
+            return;
+        }
         Calendar c = Calendar.getInstance();
         log.debug("Attempting to {} chr {}", notAutosave ? "save" : "autosave", name);
 
