@@ -126,6 +126,8 @@ At this point, you can log in to the admin account using the following credentia
 * Pin: "0000"
 * Pic: "000000"
 
+To change the admin password, set `ADMIN_PASSWORD` in your `cosmic.env` file (see `cosmic.env.example`). The server bcrypt-hashes the value and applies it on startup; leave it blank to keep the default password.
+
 You can also create a new regular account by typing in your desired username & password and attempting to log in. This "automatic registration" feature lets you create new accounts to play around with. It is enabled by default (see _config.yaml_).
 
 #### Entering the game

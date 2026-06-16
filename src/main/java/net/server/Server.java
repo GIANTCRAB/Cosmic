@@ -31,6 +31,7 @@ import client.inventory.ItemFactory;
 import client.inventory.manipulator.CashIdGenerator;
 import client.newyear.NewYearCardRecord;
 import client.processor.npc.FredrickProcessor;
+import config.EnvResolver;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
@@ -71,6 +72,7 @@ import server.expeditions.ExpeditionBossLog;
 import server.life.PlayerNPC;
 import server.quest.Quest;
 import service.NoteService;
+import tools.BCrypt;
 import tools.DatabaseConnection;
 import tools.Pair;
 
@@ -896,6 +898,7 @@ public class Server {
             CashIdGenerator.loadExistentCashIdsFromDb(con);
             applyAllNameChanges(con); // -- name changes can be missed by INSTANT_NAME_CHANGE --
             applyAllWorldTransfers(con);
+            setAdminPasswordIfConfigured(con);
             PlayerNPC.loadRunningRankData(con, worldCount);
         } catch (SQLException sqle) {
             log.error("Failed to run all startup-bound database tasks", sqle);
@@ -975,6 +978,19 @@ public class Server {
         try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET HasMerchant = 0")) {
             ps.executeUpdate();
         }
+    }
+
+    private static void setAdminPasswordIfConfigured(Connection con) throws SQLException {
+        String pwd = EnvResolver.resolve(System.getenv("ADMIN_PASSWORD"));
+        if (pwd == null) {
+            return;
+        }
+        String hash = BCrypt.hashpw(pwd, BCrypt.gensalt(12));
+        try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET password = ? WHERE name = 'admin'")) {
+            ps.setString(1, hash);
+            ps.executeUpdate();
+        }
+        log.info("Admin account password applied from ADMIN_PASSWORD environment variable.");
     }
 
     private void initializeTimelyTasks(ChannelDependencies channelDependencies) {
