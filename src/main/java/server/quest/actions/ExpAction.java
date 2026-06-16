@@ -54,7 +54,7 @@ public class ExpAction extends AbstractQuestAction {
         if (!YamlConfig.config.server.USE_QUEST_RATE) {
             chr.gainExp(gain * chr.getExpRate(), true, true);
         } else {
-            chr.gainExp(gain * chr.getQuestExpRate(), true, true);
+            chr.gainExp((int) Math.floor(gain * chr.getQuestExpRate()), true, true);
         }
     }
 } 

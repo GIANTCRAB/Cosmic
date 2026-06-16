@@ -123,7 +123,7 @@ public class World {
     private int droprate;
     private int bossdroprate;
     private int mesorate;
-    private int questrate;
+    private double questrate;
     private int travelrate;
     private int fishingrate;
     private final String eventmsg;
@@ -200,7 +200,7 @@ public class World {
     private ScheduledFuture<?> timeoutSchedule;
     private ScheduledFuture<?> hpDecSchedule;
 
-    public World(int world, int flag, String eventmsg, int exprate, int droprate, int bossdroprate, int mesorate, int questrate, int travelrate, int fishingrate) {
+    public World(int world, int flag, String eventmsg, int exprate, int droprate, int bossdroprate, int mesorate, double questrate, int travelrate, int fishingrate) {
         this.id = world;
         this.flag = flag;
         this.eventmsg = eventmsg;
@@ -430,11 +430,11 @@ public class World {
         }
     }
 
-    public int getQuestRate() {
+    public double getQuestRate() {
         return questrate;
     }
 
-    public void setQuestRate(int quest) {
+    public void setQuestRate(double quest) {
         this.questrate = quest;
     }
 

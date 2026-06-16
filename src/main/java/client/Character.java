@@ -4981,7 +4981,7 @@ public class Character extends AbstractCharacterObject {
         return mesoRate / (mesoCoupon * getWorldServer().getMesoRate());
     }
 
-    public int getQuestExpRate() {
+    public double getQuestExpRate() {
         if (hasNoviceExpRate()) {
             return 1;
         }
@@ -4990,7 +4990,7 @@ public class Character extends AbstractCharacterObject {
         return w.getExpRate() * w.getQuestRate();
     }
 
-    public int getQuestMesoRate() {
+    public double getQuestMesoRate() {
         World w = getWorldServer();
         return w.getMesoRate() * w.getQuestRate();
     }
