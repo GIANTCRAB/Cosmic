@@ -203,6 +203,8 @@ public class ServerConfig {
     public boolean USE_FULL_HOLY_SYMBOL;
 
     //Character Configuration
+    public int MAX_INVENTORY_SLOTS;
+    public boolean USE_EXTENDED_INVENTORY_SLOTS;
     public boolean USE_ADD_SLOTS_BY_LEVEL;
     public boolean USE_ADD_RATES_BY_LEVEL;
     public boolean USE_STACK_COUPON_RATES;

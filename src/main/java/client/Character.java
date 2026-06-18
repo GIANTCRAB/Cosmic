@@ -41,6 +41,7 @@ import client.keybind.QuickslotBinding;
 import client.newyear.NewYearCardRecord;
 import client.processor.action.PetAutopotProcessor;
 import client.processor.HardcoreProcessor;
+import client.processor.InventorySlotProcessor;
 import client.processor.npc.FredrickProcessor;
 import config.YamlConfig;
 import constants.game.ExpTable;
@@ -406,9 +407,9 @@ public class Character extends AbstractCharacterObject {
         savedLocations = new SavedLocation[SavedLocationType.values().length];
 
         for (InventoryType type : InventoryType.values()) {
-            byte b = 24;
+            int b = 24;
             if (type == InventoryType.CASH) {
-                b = 96;
+                b = InventorySlotProcessor.maxSlots();
             }
             inventory[type.ordinal()] = new Inventory(this, type, b);
         }
@@ -6965,10 +6966,10 @@ public class Character extends AbstractCharacterObject {
 
                     wserv = Server.getInstance().getWorld(ret.world);
 
-                    ret.getInventory(InventoryType.EQUIP).setSlotLimit(rs.getByte("equipslots"));
-                    ret.getInventory(InventoryType.USE).setSlotLimit(rs.getByte("useslots"));
-                    ret.getInventory(InventoryType.SETUP).setSlotLimit(rs.getByte("setupslots"));
-                    ret.getInventory(InventoryType.ETC).setSlotLimit(rs.getByte("etcslots"));
+                    ret.getInventory(InventoryType.EQUIP).setSlotLimit(rs.getInt("equipslots"));
+                    ret.getInventory(InventoryType.USE).setSlotLimit(rs.getInt("useslots"));
+                    ret.getInventory(InventoryType.SETUP).setSlotLimit(rs.getInt("setupslots"));
+                    ret.getInventory(InventoryType.ETC).setSlotLimit(rs.getInt("etcslots"));
 
                     short sandboxCheck = 0x0;
                     for (Pair<Item, InventoryType> item : ItemFactory.INVENTORY.loadItems(ret.id, !channelserver)) {
@@ -9193,13 +9194,12 @@ public class Character extends AbstractCharacterObject {
         this.skinColor = skinColor;
     }
 
-    public byte getSlots(int type) {
-        return type == InventoryType.CASH.getType() ? 96 : inventory[type].getSlotLimit();
+    public int getSlots(int type) {
+        return type == InventoryType.CASH.getType() ? InventorySlotProcessor.maxSlots() : inventory[type].getSlotLimit();
     }
 
     public boolean canGainSlots(int type, int slots) {
-        slots += inventory[type].getSlotLimit();
-        return slots <= 96;
+        return InventorySlotProcessor.canGainSlots(inventory[type].getSlotLimit(), slots, InventorySlotProcessor.maxSlots());
     }
 
     public boolean gainSlots(int type, int slots) {

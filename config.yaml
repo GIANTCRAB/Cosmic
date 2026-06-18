@@ -356,6 +356,8 @@ server:
 
     #Character Configuration
     USE_ADD_SLOTS_BY_LEVEL: false    #Slots are added each 20 levels.
+    MAX_INVENTORY_SLOTS: 96               #Max inventory slots per tab (also the fixed CASH tab size). Stored as an int server-side, so there is no 127 storage cap. The char-load and INVENTORY_GROW packets send this as 1 byte (wire max 255); whether 128-255 renders depends on if the client reads that byte signed (127) or unsigned (255) - needs client testing.
+    USE_EXTENDED_INVENTORY_SLOTS: false   #When true, char-load and INVENTORY_GROW send the slot count as 2 bytes (writeShort), enabling >255. REQUIRES a matching client patch (read 2 bytes); with an unmodified client this desyncs/crashes, so leave false until the client is patched.
     USE_ADD_RATES_BY_LEVEL: false    #Rates are added each 20 levels.
     USE_STACK_COUPON_RATES: false   #Multiple coupons effects builds up together.
     USE_PERFECT_PITCH: false         #For lvl 30 or above, each lvlup grants player 1 perfect pitch.

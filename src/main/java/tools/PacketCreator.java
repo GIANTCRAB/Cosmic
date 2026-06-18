@@ -492,8 +492,14 @@ public class PacketCreator {
     }
 
     private static void addInventoryInfo(OutPacket p, Character chr) {
+        boolean extended = YamlConfig.config.server.USE_EXTENDED_INVENTORY_SLOTS;
         for (byte i = 1; i <= 5; i++) {
-            p.writeByte(chr.getInventory(InventoryType.getByType(i)).getSlotLimit());
+            int slotLimit = chr.getInventory(InventoryType.getByType(i)).getSlotLimit();
+            if (extended) {
+                p.writeShort(slotLimit);
+            } else {
+                p.writeByte(slotLimit);
+            }
         }
         p.writeLong(getTime(-2));
         Inventory iv = chr.getInventory(InventoryType.EQUIPPED);
@@ -2463,7 +2469,11 @@ public class PacketCreator {
     public static Packet updateInventorySlotLimit(int type, int newLimit) {
         final OutPacket p = OutPacket.create(SendOpcode.INVENTORY_GROW);
         p.writeByte(type);
-        p.writeByte(newLimit);
+        if (YamlConfig.config.server.USE_EXTENDED_INVENTORY_SLOTS) {
+            p.writeShort(newLimit);
+        } else {
+            p.writeByte(newLimit);
+        }
         return p;
     }
 
@@ -7119,7 +7129,7 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet showBoughtInventorySlots(int type, short slots) {
+    public static Packet showBoughtInventorySlots(int type, int slots) {
         OutPacket p = OutPacket.create(SendOpcode.CASHSHOP_OPERATION);
 
         p.writeByte(0x60);

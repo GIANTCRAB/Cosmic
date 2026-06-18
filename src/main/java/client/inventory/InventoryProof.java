@@ -27,7 +27,7 @@ import client.Character;
 public class InventoryProof extends Inventory {
 
     public InventoryProof(Character mc) {
-        super(mc, InventoryType.CANHOLD, (byte) 0);
+        super(mc, InventoryType.CANHOLD, 0);
     }
 
     public void cloneContents(Inventory inv) {

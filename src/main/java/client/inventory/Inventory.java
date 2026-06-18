@@ -53,10 +53,10 @@ public class Inventory implements Iterable<Item> {
     protected final Lock lock = new ReentrantLock(true);
 
     protected Character owner;
-    protected byte slotLimit;
+    protected int slotLimit;
     protected boolean checked = false;
 
-    public Inventory(Character mc, InventoryType type, byte slotLimit) {
+    public Inventory(Character mc, InventoryType type, int slotLimit) {
         this.owner = mc;
         this.inventory = new LinkedHashMap<>();
         this.type = type;
@@ -71,7 +71,7 @@ public class Inventory implements Iterable<Item> {
         return type.equals(InventoryType.EQUIP) || type.equals(InventoryType.EQUIPPED);
     }
 
-    public byte getSlotLimit() {
+    public int getSlotLimit() {
         lock.lock();
         try {
             return slotLimit;
@@ -96,7 +96,7 @@ public class Inventory implements Iterable<Item> {
                 }
             }
 
-            slotLimit = (byte) newLimit;
+            slotLimit = newLimit;
         } finally {
             lock.unlock();
         }

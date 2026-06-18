@@ -48,9 +48,9 @@ public class SetEqStatCommand extends Command {
         short newSpdJmp = params.length >= 2 ? (short) Integer.parseInt(params[1]) : 0;
         Inventory equip = player.getInventory(InventoryType.EQUIP);
 
-        for (byte i = 1; i <= equip.getSlotLimit(); i++) {
+        for (int i = 1; i <= equip.getSlotLimit(); i++) {
             try {
-                Equip eq = (Equip) equip.getItem(i);
+                Equip eq = (Equip) equip.getItem((short) i);
                 if (eq == null) {
                     continue;
                 }
