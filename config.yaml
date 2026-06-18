@@ -330,7 +330,7 @@ server:
     MOB_STATUS_MONITOR_LIFE: 84         #Idle proc count the mob disease monitor is allowed to be there before closing it due to inactivity.
     MOB_STATUS_AGGRO_PERSISTENCE: 2     #Idle proc count on aggro update for a mob to keep following the current controller, given him/her is the leading damage dealer.
     MOB_STATUS_AGGRO_INTERVAL: 5000     #Interval in milliseconds between aggro logistics update.
-    USE_AUTOAGGRO_NEARBY: false         #Mobs start following the player when approached.
+    USE_AUTOAGGRO_NEARBY: true         #Mobs start following the player when approached.
 
     #Some Gameplay Enhancing Configurations
     #Scroll Configuration
@@ -345,7 +345,7 @@ server:
     #Beginner Skills Configuration
     USE_ULTRA_NIMBLE_FEET: true     #Massive speed & jump upgrade.
     USE_ULTRA_RECOVERY: true        #Massive recovery amounts overtime.
-    USE_ULTRA_THREE_SNAILS: false    #Massive damage on shell toss.
+    USE_ULTRA_THREE_SNAILS: true    #Massive damage on shell toss.
 
     #Other Skills Configuration
     USE_FULL_ARAN_SKILLSET: false   #Enables starter availability to all Aran job skills. Suggestion thanks to Masterrulax.
@@ -356,7 +356,7 @@ server:
 
     #Character Configuration
     USE_ADD_SLOTS_BY_LEVEL: false    #Slots are added each 20 levels.
-    MAX_INVENTORY_SLOTS: 96               #Max inventory slots per tab (also the fixed CASH tab size). Stored as an int server-side, so there is no 127 storage cap. The char-load and INVENTORY_GROW packets send this as 1 byte (wire max 255); whether 128-255 renders depends on if the client reads that byte signed (127) or unsigned (255) - needs client testing.
+    MAX_INVENTORY_SLOTS: 124               #Max inventory slots per tab (also the fixed CASH tab size). Stored as an int server-side, so there is no 127 storage cap. The char-load and INVENTORY_GROW packets send this as 1 byte (wire max 255); whether 128-255 renders depends on if the client reads that byte signed (127) or unsigned (255) - needs client testing.
     USE_EXTENDED_INVENTORY_SLOTS: false   #When true, char-load and INVENTORY_GROW send the slot count as 2 bytes (writeShort), enabling >255. REQUIRES a matching client patch (read 2 bytes); with an unmodified client this desyncs/crashes, so leave false until the client is patched.
     USE_ADD_RATES_BY_LEVEL: false    #Rates are added each 20 levels.
     USE_STACK_COUPON_RATES: false   #Multiple coupons effects builds up together.
@@ -387,12 +387,12 @@ server:
     FAMILY_MAX_GENERATIONS: 1000         #Maximum depth of family tree. (Distance from leader to farthest junior)
 
     #Equipment Configuration
-    USE_EQUIPMNT_LVLUP_SLOTS: false  #Equips can upgrade slots at level up.
-    USE_EQUIPMNT_LVLUP_POWER: false  #Enable more powerful stat upgrades at equip level up.
+    USE_EQUIPMNT_LVLUP_SLOTS: true  #Equips can upgrade slots at level up.
+    USE_EQUIPMNT_LVLUP_POWER: true  #Enable more powerful stat upgrades at equip level up.
     USE_EQUIPMNT_LVLUP_CASH: false   #Enable equip leveling up on cash equipments as well.
     MAX_EQUIPMNT_LVLUP_STAT_UP: 10000   #Max stat upgrade an equipment can have on a levelup.
     MAX_EQUIPMNT_STAT: 32767            #Max stat on an equipment by leveling up.
-    USE_EQUIPMNT_LVLUP: 1               #All equips lvlup at max level of N, set 1 to disable.
+    USE_EQUIPMNT_LVLUP: 50               #All equips lvlup at max level of N, set 1 to disable.
 
     #Map-Chair Configuration
     USE_CHAIR_EXTRAHEAL: false       #Enable map chairs to further recover player's HP and MP (player must have the Chair Mastery skill).
