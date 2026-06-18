@@ -35,8 +35,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -143,6 +146,32 @@ public class Family {
         }
     }
 
+    public void removeMemberEntry(FamilyEntry entry) {
+        members.remove(entry.getChrId());
+    }
+
+    public void removeMemberForDeletion(FamilyEntry entry) {
+        if (leader == entry) {
+            disband();
+        } else {
+            entry.detachForCharacterDeletion();
+        }
+    }
+
+    public void disband() {
+        for (FamilyEntry entry : members.values()) {
+            Character chr = entry.getChr();
+            if (chr != null) {
+                chr.setFamilyEntry(null);
+                chr.setFamilyId(0);
+            }
+            entry.clearFamily();
+            entry.clearSenior();
+        }
+        members.clear();
+        leader = null;
+    }
+
     public void addEntryTree(FamilyEntry root) {
         members.put(root.getChrId(), root);
         for (FamilyEntry junior : root.getJuniors()) {
@@ -187,6 +216,21 @@ public class Family {
             entry.setRepsToSenior(0);
             entry.resetEntitlementUsages();
         }
+    }
+
+    public static Set<Integer> repairLeaderlessFamilies(Collection<Family> families) {
+        Set<Integer> disbanded = new HashSet<>();
+        for (Family family : families) {
+            FamilyEntry leader = family.getLeader();
+            if (leader == null) {
+                log.warn("Disbanding leaderless family {} on load", family.getID());
+                family.disband();
+                disbanded.add(family.getID());
+            } else {
+                leader.doFullCount();
+            }
+        }
+        return disbanded;
     }
 
     public static void loadAllFamilies(Connection con) {
@@ -276,8 +320,10 @@ public class Family {
         }
 
         for (World world : Server.getInstance().getWorlds()) {
-            for (Family family : world.getFamilies()) {
-                family.getLeader().doFullCount();
+            Set<Integer> leaderless = repairLeaderlessFamilies(world.getFamilies());
+            for (int fid : leaderless) {
+                world.removeFamily(fid);
+                Character.disbandFamilyFromDB(fid);
             }
         }
     }

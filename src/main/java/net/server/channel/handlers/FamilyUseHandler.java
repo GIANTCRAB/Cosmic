@@ -133,7 +133,10 @@ public final class FamilyUseHandler extends AbstractPacketHandler {
     private boolean useEntitlement(FamilyEntry entry, FamilyEntitlement entitlement) {
         if (entry.useEntitlement(entitlement)) {
             entry.gainReputation(-entitlement.getRepCost(), false);
-            entry.getChr().sendPacket(PacketCreator.getFamilyInfo(entry));
+            Character chr = entry.getChr();
+            if (chr != null) {
+                chr.sendPacket(PacketCreator.getFamilyInfo(entry));
+            }
             return true;
         }
         return false;

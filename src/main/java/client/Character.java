@@ -6547,6 +6547,48 @@ public class Character extends AbstractCharacterObject {
             return false;
         }
     }
+
+    public void leaveFamily() {
+        FamilyEntry entry = getFamilyEntry();
+        if (entry == null) {
+            return;
+        }
+        Family family = entry.getFamily();
+        if (family == null) {
+            setFamilyEntry(null);
+            setFamilyId(0);
+            return;
+        }
+
+        int familyId = family.getID();
+        int world = family.getWorld();
+        boolean wasLeader = (family.getLeader() == entry);
+
+        family.removeMemberForDeletion(entry);
+
+        setFamilyEntry(null);
+        setFamilyId(0);
+
+        if (wasLeader) {
+            Server.getInstance().getWorld(world).removeFamily(familyId);
+            disbandFamilyFromDB(familyId);
+        }
+    }
+
+    static void disbandFamilyFromDB(int familyId) {
+        try (Connection con = DatabaseConnection.getConnection()) {
+            try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET familyid = 0 WHERE familyid = ?")) {
+                ps.setInt(1, familyId);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = con.prepareStatement("DELETE FROM family_character WHERE familyid = ?")) {
+                ps.setInt(1, familyId);
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            log.error("Could not disband family {} in DB", familyId, e);
+        }
+    }
     public void setPlayerRates() {
         this.expRate *= GameConstants.getPlayerBonusExpRate(this.level / 20);
         this.mesoRate *= GameConstants.getPlayerBonusMesoRate(this.level / 20);

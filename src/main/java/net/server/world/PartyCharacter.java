@@ -31,6 +31,7 @@ public class PartyCharacter {
     private int channel, world;
     private int jobid;
     private int mapid;
+    private int guildid;
     private boolean online;
     private Job job;
     private Character character;
@@ -44,6 +45,7 @@ public class PartyCharacter {
         this.id = maplechar.getId();
         this.jobid = maplechar.getJob().getId();
         this.mapid = maplechar.getMapId();
+        this.guildid = maplechar.getGuildId();
         this.online = true;
         this.job = maplechar.getJob();
     }
@@ -73,7 +75,8 @@ public class PartyCharacter {
     }
 
     public boolean isLeader() {
-        return getPlayer().isPartyLeader();
+        Character player = getPlayer();
+        return player != null && player.isPartyLeader();
     }
 
     public boolean isOnline() {
@@ -108,7 +111,7 @@ public class PartyCharacter {
     }
 
     public int getGuildId() {
-        return character.getGuildId();
+        return guildid;
     }
 
     @Override

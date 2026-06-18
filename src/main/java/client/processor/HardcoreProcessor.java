@@ -33,6 +33,9 @@ public class HardcoreProcessor {
     private static void executePermanentDeath(Character chr) {
         chr.flushStorage();
 
+        chr.leaveParty();
+        chr.leaveFamily();
+
         final var deleted = chr.deletePermanently();
         if (!deleted) {
             log.warn("Failed to delete hardcore-dead character '{}' (cid: {}) from DB", chr.getName(), chr.getId());

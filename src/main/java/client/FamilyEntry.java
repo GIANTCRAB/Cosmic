@@ -30,6 +30,7 @@ import tools.Pair;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -344,6 +345,14 @@ public class FamilyEntry {
         return senior;
     }
 
+    public void clearSenior() {
+        this.senior = null;
+    }
+
+    public void clearFamily() {
+        this.family = null;
+    }
+
     public synchronized boolean setSenior(FamilyEntry senior, boolean save) {
         if (this.senior == senior) {
             return false;
@@ -457,6 +466,26 @@ public class FamilyEntry {
             }
         }
         return false;
+    }
+
+    public synchronized void detachForCharacterDeletion() {
+        FamilyEntry seniorEntry = getSenior();
+        if (seniorEntry != null) {
+            seniorEntry.removeJunior(this);
+            this.senior = null;
+        }
+
+        for (FamilyEntry junior : new ArrayList<>(getJuniors())) {
+            if (junior != null) {
+                junior.senior = null;
+                this.removeJunior(junior);
+            }
+        }
+
+        Family familyRef = this.family;
+        if (familyRef != null) {
+            familyRef.removeMemberEntry(this);
+        }
     }
 
     public int getTotalSeniors() {

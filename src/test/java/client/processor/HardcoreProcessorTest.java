@@ -79,9 +79,24 @@ class HardcoreProcessorTest {
 
         var inOrder = inOrder(chr, client);
         inOrder.verify(chr).flushStorage();           // account storage persisted before deletion
+        inOrder.verify(chr).leaveParty();             // detach from party before deletion (prevents ghost member)
+        inOrder.verify(chr).leaveFamily();            // detach from family before deletion (prevents ghost entry)
         inOrder.verify(chr).deletePermanently();      // character + inventory deleted
         inOrder.verify(chr).markPendingHardcoreDeletion();
         inOrder.verify(client).forceDisconnect();
+    }
+
+    @Test
+    void enabledModeDetachesFromPartyAndFamilyBeforeDeletion() {
+        when(chr.getClient()).thenReturn(client);
+        when(chr.deletePermanently()).thenReturn(true);
+
+        HardcoreProcessor.processPermanentDeathIfEnabled(chr);
+
+        var inOrder = inOrder(chr);
+        inOrder.verify(chr).leaveParty();
+        inOrder.verify(chr).leaveFamily();
+        inOrder.verify(chr).deletePermanently();
     }
 
     @Test
