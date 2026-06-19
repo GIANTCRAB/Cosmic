@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,6 +112,41 @@ class EquipStatUpgradeSelectionTest {
         for (Equip.StatUpgrade s : candidates) {
             assertTrue(hits.get(s) > 0, "Stat " + s + " was never selected");
         }
+    }
+
+    @Test
+    void watkPositiveIncludesIncPAD() {
+        List<Equip.StatUpgrade> candidates = Equip.buildUpgradeCandidates(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 5, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0);
+
+        assertEquals(List.of(Equip.StatUpgrade.incPAD), candidates);
+    }
+
+    @Test
+    void watkZeroExcludesIncPAD() {
+        List<Equip.StatUpgrade> candidates = Equip.buildUpgradeCandidates(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0);
+
+        assertTrue(candidates.isEmpty());
+        assertFalse(candidates.contains(Equip.StatUpgrade.incPAD));
+    }
+
+    @Test
+    void weaponLikeStatsIncludeIncPAD() {
+        List<Equip.StatUpgrade> candidates = Equip.buildUpgradeCandidates(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 10, (short) 0,
+                (short) 0, (short) 0, (short) 5, (short) 3,
+                (short) 0, (short) 0);
+
+        assertTrue(candidates.contains(Equip.StatUpgrade.incPAD));
+        assertEquals(List.of(Equip.StatUpgrade.incPAD, Equip.StatUpgrade.incEVA, Equip.StatUpgrade.incACC), candidates);
     }
 
     @Test

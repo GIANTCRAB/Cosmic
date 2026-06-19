@@ -37,6 +37,7 @@ import client.SkillMacro;
 import client.Stat;
 import client.inventory.Equip;
 import client.inventory.Equip.ScrollResult;
+import client.inventory.EquipmentLevelModel;
 import client.inventory.Inventory;
 import client.inventory.InventoryType;
 import client.inventory.Item;
@@ -475,13 +476,19 @@ public class PacketCreator {
                 p.writeByte(0x40);
             }
         } else {
-            int itemLevel = equip.getItemLevel();
+            int trueLevel = equip.getItemLevel();
+            int networkLevel = equip.getNetworkItemLevel();
 
-            long expNibble = (ExpTable.getExpNeededForLevel(ii.getEquipLevelReq(item.getItemId())) * equip.getItemExp());
-            expNibble /= ExpTable.getEquipExpNeededForLevel(itemLevel);
+            long expNibble;
+            if (EquipmentLevelModel.isAtNetworkCap(trueLevel)) {
+                expNibble = 0;   // past the client's display cap: client shows MAX LEVEL, hide further progress
+            } else {
+                expNibble = (ExpTable.getExpNeededForLevel(ii.getEquipLevelReq(item.getItemId())) * equip.getItemExp());
+                expNibble /= EquipmentLevelModel.expNeededForNetworkLevel(networkLevel);
+            }
 
             p.writeByte(0);
-            p.writeByte(itemLevel); //Item Level
+            p.writeByte(networkLevel); //Item Level
             p.writeInt((int) expNibble);
             p.writeInt(equip.getVicious()); //WTF NEXON ARE YOU SERIOUS?
             p.writeLong(0);

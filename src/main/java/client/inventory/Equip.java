@@ -361,6 +361,14 @@ public class Equip extends Item {
     }
 
     private List<StatUpgrade> getUpgradeCandidates() {
+        return buildUpgradeCandidates(str, dex, _int, luk, hp, mp, watk, matk,
+                wdef, mdef, acc, avoid, speed, jump);
+    }
+
+    static List<StatUpgrade> buildUpgradeCandidates(short str, short dex, short _int, short luk,
+                                                    short hp, short mp, short watk, short matk,
+                                                    short wdef, short mdef, short acc, short avoid,
+                                                    short speed, short jump) {
         List<StatUpgrade> candidates = new ArrayList<>();
         if (dex > 0) {
             candidates.add(StatUpgrade.incDEX);
@@ -697,7 +705,7 @@ public class Equip extends Item {
             return;
         }
 
-        int equipMaxLevel = Math.min(30, Math.max(ii.getEquipLevel(this.getItemId(), true), YamlConfig.config.server.USE_EQUIPMNT_LVLUP));
+        int equipMaxLevel = Math.max(ii.getEquipLevel(this.getItemId(), true), EquipmentLevelModel.trueMaxLevel());
         if (itemLevel >= equipMaxLevel) {
             return;
         }
@@ -710,7 +718,7 @@ public class Equip extends Item {
         float baseExpGain = gain * elementModifier * masteryModifier;
 
         itemExp += baseExpGain;
-        int expNeeded = ExpTable.getEquipExpNeededForLevel(itemLevel);
+        int expNeeded = EquipmentLevelModel.expNeededForTrueLevel(itemLevel);
 
         if (YamlConfig.config.server.USE_DEBUG_SHOW_INFO_EQPEXP) {
             log.debug("{} -> EXP Gain: {}, Mastery: {}, Base gain: {}, exp: {} / {}, Kills TNL: {}", ii.getName(getItemId()),
@@ -727,7 +735,7 @@ public class Equip extends Item {
                     break;
                 }
 
-                expNeeded = ExpTable.getEquipExpNeededForLevel(itemLevel);
+                expNeeded = EquipmentLevelModel.expNeededForTrueLevel(itemLevel);
             }
         }
 
@@ -742,7 +750,7 @@ public class Equip extends Item {
             }
         }
 
-        return itemLevel >= YamlConfig.config.server.USE_EQUIPMNT_LVLUP;
+        return itemLevel >= EquipmentLevelModel.trueMaxLevel();
     }
 
     public String showEquipFeatures(Client c) {
@@ -752,7 +760,7 @@ public class Equip extends Item {
         }
 
         String eqpName = ii.getName(getItemId());
-        String eqpInfo = reachedMaxLevel() ? " #e#rMAX LEVEL#k#n" : (" EXP: #e#b" + (int) itemExp + "#k#n / " + ExpTable.getEquipExpNeededForLevel(itemLevel));
+        String eqpInfo = reachedMaxLevel() ? " #e#rMAX LEVEL#k#n" : (" EXP: #e#b" + (int) itemExp + "#k#n / " + EquipmentLevelModel.expNeededForTrueLevel(itemLevel));
 
         return "'" + eqpName + "' -> LV: #e#b" + itemLevel + "#k#n    " + eqpInfo + "\r\n";
     }
@@ -803,5 +811,9 @@ public class Equip extends Item {
 
     public byte getItemLevel() {
         return itemLevel;
+    }
+
+    public int getNetworkItemLevel() {
+        return EquipmentLevelModel.networkLevelOf(itemLevel);
     }
 }
