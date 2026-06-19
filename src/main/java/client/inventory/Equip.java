@@ -32,6 +32,7 @@ import tools.PacketCreator;
 import tools.Pair;
 import tools.Randomizer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -350,48 +351,110 @@ public class Equip extends Item {
     }
 
     private void improveDefaultStats(List<Pair<StatUpgrade, Integer>> stats) {
+        // When USE_EQUIPMNT_LVLUP_POWER is disabled, only one random stat is upgraded per level up;
+        // otherwise every present stat gets a chance to upgrade (powerful mode).
+        List<StatUpgrade> toUpgrade = selectStatsToUpgrade(getUpgradeCandidates(),
+                YamlConfig.config.server.USE_EQUIPMNT_LVLUP_POWER);
+        for (StatUpgrade name : toUpgrade) {
+            getUnitStatUpgrade(stats, name, getCurStatValue(name), isAttributeStat(name));
+        }
+    }
+
+    private List<StatUpgrade> getUpgradeCandidates() {
+        List<StatUpgrade> candidates = new ArrayList<>();
         if (dex > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incDEX, dex, true);
+            candidates.add(StatUpgrade.incDEX);
         }
         if (str > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incSTR, str, true);
+            candidates.add(StatUpgrade.incSTR);
         }
         if (_int > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incINT, _int, true);
+            candidates.add(StatUpgrade.incINT);
         }
         if (luk > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incLUK, luk, true);
+            candidates.add(StatUpgrade.incLUK);
         }
         if (hp > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incMHP, hp, false);
+            candidates.add(StatUpgrade.incMHP);
         }
         if (mp > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incMMP, mp, false);
+            candidates.add(StatUpgrade.incMMP);
         }
         if (watk > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incPAD, watk, false);
+            candidates.add(StatUpgrade.incPAD);
         }
         if (matk > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incMAD, matk, false);
+            candidates.add(StatUpgrade.incMAD);
         }
         if (wdef > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incPDD, wdef, false);
+            candidates.add(StatUpgrade.incPDD);
         }
         if (mdef > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incMDD, mdef, false);
+            candidates.add(StatUpgrade.incMDD);
         }
         if (avoid > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incEVA, avoid, false);
+            candidates.add(StatUpgrade.incEVA);
         }
         if (acc > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incACC, acc, false);
+            candidates.add(StatUpgrade.incACC);
         }
         if (speed > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incSpeed, speed, false);
+            candidates.add(StatUpgrade.incSpeed);
         }
         if (jump > 0) {
-            getUnitStatUpgrade(stats, StatUpgrade.incJump, jump, false);
+            candidates.add(StatUpgrade.incJump);
         }
+        return candidates;
+    }
+
+    static List<StatUpgrade> selectStatsToUpgrade(List<StatUpgrade> candidates, boolean power) {
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+        if (power) {
+            return new ArrayList<>(candidates);
+        }
+        return List.of(candidates.get(Randomizer.rand(0, candidates.size() - 1)));
+    }
+
+    private int getCurStatValue(StatUpgrade name) {
+        switch (name) {
+            case incDEX:
+                return dex;
+            case incSTR:
+                return str;
+            case incINT:
+                return _int;
+            case incLUK:
+                return luk;
+            case incMHP:
+                return hp;
+            case incMMP:
+                return mp;
+            case incPAD:
+                return watk;
+            case incMAD:
+                return matk;
+            case incPDD:
+                return wdef;
+            case incMDD:
+                return mdef;
+            case incEVA:
+                return avoid;
+            case incACC:
+                return acc;
+            case incSpeed:
+                return speed;
+            case incJump:
+                return jump;
+            default:
+                return 0;
+        }
+    }
+
+    private static boolean isAttributeStat(StatUpgrade name) {
+        return name == StatUpgrade.incDEX || name == StatUpgrade.incSTR
+                || name == StatUpgrade.incINT || name == StatUpgrade.incLUK;
     }
 
     public Map<StatUpgrade, Short> getStats() {
