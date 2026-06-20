@@ -64,7 +64,7 @@ public final class PlayerMapTransitionHandler extends AbstractPacketHandler {
                     }
 
                     m.sendSpawnData(c);
-                    m.aggroSwitchController(chr, false);
+                    m.aggroSwitchController(chr, m.isFirstAttack());
                 }
             }
         }

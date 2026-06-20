@@ -1967,7 +1967,7 @@ public class Monster extends AbstractLoadedLife {
             return;
         }
 
-        this.aggroSwitchController(newController, false);
+        this.aggroSwitchController(newController, this.isFirstAttack());
     }
 
     /**

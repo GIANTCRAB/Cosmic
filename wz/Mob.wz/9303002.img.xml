@@ -165,6 +165,8 @@
       <int name="effectAfter" value="300"/>
       <int name="attackAfter" value="900"/>
       <int name="jumpAttack" value="1"/>
+      <int name="disease" value="123"/>
+      <int name="level" value="3"/>
     </imgdir>
     <canvas name="0" width="206" height="142">
       <vector name="origin" x="73" y="142"/>
