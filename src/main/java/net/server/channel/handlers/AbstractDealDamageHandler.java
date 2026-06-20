@@ -27,6 +27,7 @@ import client.Job;
 import client.Skill;
 import client.SkillFactory;
 import client.autoban.AutobanFactory;
+import client.processor.DamageAbsorptionProcessor;
 import client.status.MonsterStatus;
 import client.status.MonsterStatusEffect;
 import config.YamlConfig;
@@ -524,8 +525,7 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
                         for (MobSkillId msId : monster.getSkills()) {
                             if (msId.type() == MobSkillType.PHYSICAL_AND_MAGIC_COUNTER) {
                                 MobSkill toUse = MobSkillFactory.getMobSkillOrThrow(MobSkillType.PHYSICAL_AND_MAGIC_COUNTER, msId.level());
-                                player.addHP(-toUse.getX());
-                                map.broadcastMessage(player, PacketCreator.damagePlayer(0, monster.getId(), player.getId(), toUse.getX(), 0, 0, false, 0, true, monster.getObjectId(), 0, 0), true);
+                                applyReflectDamage(player, map, monster, toUse.getX());
                             }
                         }
                     }
@@ -533,8 +533,7 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
                         for (MobSkillId msId : monster.getSkills()) {
                             if (msId.type() == MobSkillType.PHYSICAL_AND_MAGIC_COUNTER) {
                                 MobSkill toUse = MobSkillFactory.getMobSkillOrThrow(MobSkillType.PHYSICAL_AND_MAGIC_COUNTER, msId.level());
-                                player.addHP(-toUse.getY());
-                                map.broadcastMessage(player, PacketCreator.damagePlayer(0, monster.getId(), player.getId(), toUse.getY(), 0, 0, false, 0, true, monster.getObjectId(), 0, 0), true);
+                                applyReflectDamage(player, map, monster, toUse.getY());
                             }
                         }
                     }
@@ -543,6 +542,22 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Applies fixed reflect/counter damage to the attacker, routed through the shared
+     * defensive-absorption pipeline (Magic Guard / Meso Guard / Battleship) so that, for
+     * example, a cleric with Magic Guard up absorbs the hit into MP. WDEF/MDEF and other
+     * damage-reduction passives are intentionally not applied to reflect damage.
+     */
+    private static void applyReflectDamage(final Character player, final MapleMap map, final Monster monster, final int reflectDamage) {
+        DamageAbsorptionProcessor.DamageSplitResult split = DamageAbsorptionProcessor.splitDamage(
+                reflectDamage,
+                player.getBuffedValue(BuffStat.MAGIC_GUARD), player.getMp(),
+                player.getBuffedValue(BuffStat.MESOGUARD), player.getMeso(),
+                player.isRidingBattleship(), 0);
+        DamageAbsorptionProcessor.applyTo(player, split);
+        map.broadcastMessage(player, PacketCreator.damagePlayer(0, monster.getId(), player.getId(), split.displayDamage(), 0, 0, false, 0, true, monster.getObjectId(), 0, 0), true);
     }
 
     private static void damageMonsterWithSkill(final Character attacker, final MapleMap map, final Monster monster,

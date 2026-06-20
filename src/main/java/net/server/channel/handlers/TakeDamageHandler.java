@@ -30,6 +30,7 @@ import client.inventory.Inventory;
 import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
+import client.processor.DamageAbsorptionProcessor;
 import client.status.MonsterStatus;
 import client.status.MonsterStatusEffect;
 import config.YamlConfig;
@@ -204,6 +205,7 @@ public final class TakeDamageHandler extends AbstractPacketHandler {
             mpattack = 0;
         }
 
+        int displayDamage = damage;
         if (damage > 0 && !chr.isHidden()) {
             if (attacker != null) {
                 if (damagefrom == -1) {
@@ -250,38 +252,18 @@ public final class TakeDamageHandler extends AbstractPacketHandler {
                 }
             }
             Integer mesoguard = chr.getBuffedValue(BuffStat.MESOGUARD);
-            if (chr.getBuffedValue(BuffStat.MAGIC_GUARD) != null && mpattack == 0) {
-                int mploss = (int) (damage * (chr.getBuffedValue(BuffStat.MAGIC_GUARD).doubleValue() / 100.0));
-                int hploss = damage - mploss;
-
-                int curmp = chr.getMp();
-                if (mploss > curmp) {
-                    hploss += mploss - curmp;
-                    mploss = curmp;
-                }
-
-                chr.addMPHP(-hploss, -mploss);
-            } else if (mesoguard != null) {
-                damage = Math.round(damage / 2);
-                int mesoloss = (int) (damage * (mesoguard.doubleValue() / 100.0));
-                if (chr.getMeso() < mesoloss) {
-                    chr.gainMeso(-chr.getMeso(), false);
-                    chr.cancelBuffStats(BuffStat.MESOGUARD);
-                } else {
-                    chr.gainMeso(-mesoloss, false);
-                }
-                chr.addMPHP(-damage, -mpattack);
-            } else {
-                if (chr.isRidingBattleship()) {
-                    chr.decreaseBattleshipHp(damage);
-                }
-                chr.addMPHP(-damage, -mpattack);
-            }
+            DamageAbsorptionProcessor.DamageSplitResult split = DamageAbsorptionProcessor.splitDamage(
+                    damage,
+                    chr.getBuffedValue(BuffStat.MAGIC_GUARD), chr.getMp(),
+                    mesoguard, chr.getMeso(),
+                    chr.isRidingBattleship(), mpattack);
+            DamageAbsorptionProcessor.applyTo(chr, split);
+            displayDamage = split.displayDamage();
         }
         if (!chr.isHidden()) {
-            map.broadcastMessage(chr, PacketCreator.damagePlayer(damagefrom, monsteridfrom, chr.getId(), damage, fake, direction, is_pgmr, pgmr, is_pg, oid, pos_x, pos_y), false);
+            map.broadcastMessage(chr, PacketCreator.damagePlayer(damagefrom, monsteridfrom, chr.getId(), displayDamage, fake, direction, is_pgmr, pgmr, is_pg, oid, pos_x, pos_y), false);
         } else {
-            map.broadcastGMMessage(chr, PacketCreator.damagePlayer(damagefrom, monsteridfrom, chr.getId(), damage, fake, direction, is_pgmr, pgmr, is_pg, oid, pos_x, pos_y), false);
+            map.broadcastGMMessage(chr, PacketCreator.damagePlayer(damagefrom, monsteridfrom, chr.getId(), displayDamage, fake, direction, is_pgmr, pgmr, is_pg, oid, pos_x, pos_y), false);
         }
         if (MapId.isDojo(map.getId())) {
             chr.setDojoEnergy(chr.getDojoEnergy() + YamlConfig.config.server.DOJO_ENERGY_DMG);
