@@ -201,10 +201,10 @@ public class PacketCreator {
 
         p.writeByte(chr.getLevel()); // level
         p.writeShort(chr.getJob().getId()); // job
-        p.writeShort(chr.getStr()); // str
-        p.writeShort(chr.getDex()); // dex
-        p.writeShort(chr.getInt()); // int
-        p.writeShort(chr.getLuk()); // luk
+        p.writeShort(chr.getStr() + chr.catchupBonusForStat(chr.getStr())); // str
+        p.writeShort(chr.getDex() + chr.catchupBonusForStat(chr.getDex())); // dex
+        p.writeShort(chr.getInt() + chr.catchupBonusForStat(chr.getInt())); // int
+        p.writeShort(chr.getLuk() + chr.catchupBonusForStat(chr.getLuk())); // luk
         p.writeShort(chr.getHp()); // hp (?)
         p.writeShort(chr.getClientMaxHp()); // maxhp
         p.writeShort(chr.getMp()); // mp (?)
@@ -1046,7 +1046,12 @@ public class PacketCreator {
                         p.writeShort(statupdate.getRight().shortValue());
                     }
                 } else if (statupdate.getLeft().getValue() < 0xFFFF) {
-                    p.writeShort(statupdate.getRight().shortValue());
+                    int statValue = statupdate.getRight();
+                    Stat statType = statupdate.getLeft();
+                    if (statType == Stat.STR || statType == Stat.DEX || statType == Stat.INT || statType == Stat.LUK) {
+                        statValue += chr.catchupBonusForStat(statValue);
+                    }
+                    p.writeShort(statValue);
                 } else if (statupdate.getLeft().getValue() == 0x20000) {
                     p.writeShort(statupdate.getRight().shortValue());
                 } else {

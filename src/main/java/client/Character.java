@@ -901,6 +901,7 @@ public class Character extends AbstractCharacterObject {
     public void newClient(Client c) {
         this.loggedIn = true;
         c.setAccountName(this.client.getAccountName());//No null's for accountName
+        c.setHighestLevelAchieved(this.client.getHighestLevelAchieved());
         this.setClient(c);
         this.map = c.getChannelServer().getMapFactory().getMap(getMapId());
         Portal portal = map.findClosestPlayerSpawnpoint(getPosition());
@@ -6440,6 +6441,10 @@ public class Character extends AbstractCharacterObject {
             level = maxClassLevel; //To prevent levels past the maximum
         }
 
+        if (client != null) {
+            client.updateHighestLevelIfHigher(level);
+        }
+
         levelUpGainSp();
 
         effLock.lock();
@@ -7148,7 +7153,7 @@ public class Character extends AbstractCharacterObject {
             }
 
             // Account info
-            try (PreparedStatement ps = con.prepareStatement("SELECT name, characterslots, language FROM accounts WHERE id = ?", Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement ps = con.prepareStatement("SELECT name, characterslots, language, highestLevelAchieved FROM accounts WHERE id = ?", Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, ret.accountid);
 
                 try (ResultSet rs = ps.executeQuery()) {
@@ -7158,6 +7163,7 @@ public class Character extends AbstractCharacterObject {
                         retClient.setAccountName(rs.getString("name"));
                         retClient.setCharacterSlots(rs.getByte("characterslots"));
                         retClient.setLanguage(rs.getInt("language"));   // thanks Zein for noticing user language not overriding default once player is in-game
+                        retClient.setHighestLevelAchieved(rs.getInt("highestLevelAchieved"));
                     }
                 }
             }
@@ -7720,6 +7726,70 @@ public class Character extends AbstractCharacterObject {
         localwatk += equipwatk;
     }
 
+    static int calculateCatchupBonusPercent(int gap, int rampThreshold, int maxBonusPercent) {
+        if (gap <= 0) {
+            return 0;
+        }
+        int threshold = Math.max(1, rampThreshold);
+        return Math.min(maxBonusPercent, gap * maxBonusPercent / threshold);
+    }
+
+    static int calculateCatchupStatBonus(int baseStat, int bonusPercent, int maxFlatStat) {
+        return baseStat * bonusPercent / 100 + maxFlatStat * bonusPercent / 100;
+    }
+
+    static int calculateCatchupFlatMax(int highestLevel, int tierSize, int flatPerTier) {
+        if (highestLevel <= 0) {
+            return 0;
+        }
+        int safeTierSize = Math.max(1, tierSize);
+        int tier = (highestLevel + safeTierSize / 2) / safeTierSize;
+        return tier * flatPerTier;
+    }
+
+    private int getCatchupBonusPercent() {
+        if (!YamlConfig.config.server.USE_ACCOUNT_LEVEL_CATCHUP_BUFF || client == null) {
+            return 0;
+        }
+        int highest = client.getHighestLevelAchieved();
+        if (highest < YamlConfig.config.server.ACCOUNT_CATCHUP_MIN_HIGHEST_LEVEL) {
+            return 0;
+        }
+        int gap = highest - level;
+        return calculateCatchupBonusPercent(gap,
+                YamlConfig.config.server.ACCOUNT_CATCHUP_RAMP_THRESHOLD,
+                YamlConfig.config.server.ACCOUNT_CATCHUP_MAX_BONUS_PERCENT);
+    }
+
+    private int getCatchupFlatMax() {
+        if (client == null) {
+            return 0;
+        }
+        return calculateCatchupFlatMax(client.getHighestLevelAchieved(),
+                YamlConfig.config.server.ACCOUNT_CATCHUP_FLAT_TIER_SIZE,
+                YamlConfig.config.server.ACCOUNT_CATCHUP_FLAT_STAT_PER_TIER);
+    }
+
+    public int catchupBonusForStat(int baseStat) {
+        int bonusPercent = getCatchupBonusPercent();
+        if (bonusPercent <= 0) {
+            return 0;
+        }
+        return calculateCatchupStatBonus(baseStat, bonusPercent, getCatchupFlatMax());
+    }
+
+    private void applyAccountCatchupBuff() {
+        int bonusPercent = getCatchupBonusPercent();
+        if (bonusPercent <= 0) {
+            return;
+        }
+        int maxFlatStat = getCatchupFlatMax();
+        localstr += calculateCatchupStatBonus(getStr(), bonusPercent, maxFlatStat);
+        localdex += calculateCatchupStatBonus(getDex(), bonusPercent, maxFlatStat);
+        localint_ += calculateCatchupStatBonus(getInt(), bonusPercent, maxFlatStat);
+        localluk += calculateCatchupStatBonus(getLuk(), bonusPercent, maxFlatStat);
+    }
+
     private void reapplyLocalStats() {
         effLock.lock();
         chrLock.lock();
@@ -7734,6 +7804,8 @@ public class Character extends AbstractCharacterObject {
             localmagic = localint_;
             localwatk = 0;
             localchairrate = -1;
+
+            applyAccountCatchupBuff();
 
             recalcEquipStats();
 

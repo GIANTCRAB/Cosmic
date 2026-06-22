@@ -362,6 +362,12 @@ server:
     USE_STACK_COUPON_RATES: false   #Multiple coupons effects builds up together.
     USE_PERFECT_PITCH: false         #For lvl 30 or above, each lvlup grants player 1 perfect pitch.
     USE_HARDCORE_MODE: true         #Character death is permanent: the character and its inventory are deleted on a real lethal death. Account storage is preserved.
+    USE_ACCOUNT_LEVEL_CATCHUP_BUFF: true  #Characters below the account's highestLevelAchieved gain a bonus to STR/DEX/INT/LUK (linear ramp), easing hardcore rerolls. Boosts damage and is shown in the stat window.
+    ACCOUNT_CATCHUP_RAMP_THRESHOLD: 4       #Level gap (highestLevelAchieved - currentLevel) at which the catch-up bonus reaches its maximum.
+    ACCOUNT_CATCHUP_MAX_BONUS_PERCENT: 100  #Maximum catch-up bonus as a % of base primary stat (100 = effectively doubled). Bonus scales linearly from 0% at gap 0 up to this at the ramp threshold.
+    ACCOUNT_CATCHUP_FLAT_TIER_SIZE: 10       #Ceiling levels per flat-stat tier. The flat max is derived from highestLevelAchieved divided (round half-up) by this.
+    ACCOUNT_CATCHUP_FLAT_STAT_PER_TIER: 50   #Flat stat added to each primary stat (STR/DEX/INT/LUK) per tier at full ramp. flatMax = roundHalfUp(highestLevelAchieved / FLAT_TIER_SIZE) * this. Scales with the same gap-ramp as the percent bonus.
+    ACCOUNT_CATCHUP_MIN_HIGHEST_LEVEL: 30    #Account highestLevelAchieved must be at least this for the catch-up buff to apply at all. Below it, no character receives the bonus.
 
     #Quest Configuration
     USE_QUEST_RATE: true           #Exp/Meso gained by quests uses fixed server exp/meso rate times quest rate as multiplier, instead of player rates.

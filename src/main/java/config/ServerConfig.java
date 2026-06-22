@@ -210,6 +210,12 @@ public class ServerConfig {
     public boolean USE_STACK_COUPON_RATES;
     public boolean USE_PERFECT_PITCH;
     public boolean USE_HARDCORE_MODE;
+    public boolean USE_ACCOUNT_LEVEL_CATCHUP_BUFF;
+    public int ACCOUNT_CATCHUP_RAMP_THRESHOLD;
+    public int ACCOUNT_CATCHUP_MAX_BONUS_PERCENT;
+    public int ACCOUNT_CATCHUP_FLAT_TIER_SIZE;
+    public int ACCOUNT_CATCHUP_FLAT_STAT_PER_TIER;
+    public int ACCOUNT_CATCHUP_MIN_HIGHEST_LEVEL;
 
     //Quest Configuration
     public boolean USE_QUEST_RATE;

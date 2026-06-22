@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="account-highest-level" author="GIANTCRAB">
+        <comment>Adds an account-level field tracking the highest level ever reached by any character on the account. Survives hardcore character deletion (deleteCharFromDB never touches the accounts row) and drives the account catch-up buff.</comment>
+        <sql>ALTER TABLE accounts ADD COLUMN highestLevelAchieved INT NOT NULL DEFAULT 1</sql>
+    </changeSet>
+
+</databaseChangeLog>

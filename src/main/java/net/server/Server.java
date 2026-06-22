@@ -64,6 +64,7 @@ import net.server.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.BackgroundUpdateManager;
 import server.CashShop.CashItemFactory;
 import server.SkillbookInformationProvider;
 import server.ThreadManager;
@@ -906,6 +907,7 @@ public class Server {
         }
 
         ThreadManager.getInstance().start();
+        BackgroundUpdateManager.getInstance().start();
         initializeTimelyTasks(channelDependencies);    // aggregated method for timely tasks thanks to lxconan
 
         try {
@@ -1976,6 +1978,7 @@ public class Server {
         resetServerWorlds();
 
         ThreadManager.getInstance().stop();
+        BackgroundUpdateManager.getInstance().stop();
         TimerManager.getInstance().purge();
         TimerManager.getInstance().stop();
 

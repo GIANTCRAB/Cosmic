@@ -58,6 +58,7 @@ import scripting.npc.NPCConversationManager;
 import scripting.npc.NPCScriptManager;
 import scripting.quest.QuestActionManager;
 import scripting.quest.QuestScriptManager;
+import server.BackgroundUpdateManager;
 import server.MapleLeafLogger;
 import server.ThreadManager;
 import server.TimerManager;
@@ -144,6 +145,7 @@ public class Client extends ChannelInboundHandlerAdapter {
     // thanks Masterrulax & try2hack for pointing out a bottleneck issue with shared locks, shavit for noticing an opportunity for improvement
     private Calendar tempBanCalendar;
     private int votePoints;
+    private int highestLevelAchieved;
     private int voteTime = -1;
     private int visibleWorlds;
     private long lastNpcClick;
@@ -156,12 +158,17 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public Client(Type type, long sessionId, String remoteAddress, PacketProcessor packetProcessor, int world, int channel) {
+        this(type, sessionId, remoteAddress, packetProcessor, world, channel, 0);
+    }
+
+    private Client(Type type, long sessionId, String remoteAddress, PacketProcessor packetProcessor, int world, int channel, int highestLevelAchieved) {
         this.type = type;
         this.sessionId = sessionId;
         this.remoteAddress = remoteAddress;
         this.packetProcessor = packetProcessor;
         this.world = world;
         this.channel = channel;
+        this.highestLevelAchieved = highestLevelAchieved;
     }
 
     public static Client createLoginClient(long sessionId, String remoteAddress, PacketProcessor packetProcessor,
@@ -649,7 +656,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id, password, gender, banned, pin, pic, characterslots, tos, language FROM accounts WHERE name = ?")) {
+             PreparedStatement ps = con.prepareStatement("SELECT id, password, gender, banned, pin, pic, characterslots, tos, language, highestLevelAchieved FROM accounts WHERE name = ?")) {
             ps.setString(1, login);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -668,6 +675,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                     gender = rs.getByte("gender");
                     characterSlots = rs.getByte("characterslots");
                     lang = rs.getInt("language");
+                    highestLevelAchieved = rs.getInt("highestLevelAchieved");
                     String passhash = rs.getString("password");
                     byte tos = rs.getByte("tos");
 
@@ -1294,6 +1302,39 @@ public class Client extends ChannelInboundHandlerAdapter {
              PreparedStatement ps = con.prepareStatement("UPDATE accounts SET votepoints = ? WHERE id = ?")) {
             ps.setInt(1, votePoints);
             ps.setInt(2, accId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int getHighestLevelAchieved() {
+        return highestLevelAchieved;
+    }
+
+    public void setHighestLevelAchieved(int highestLevelAchieved) {
+        if (highestLevelAchieved > this.highestLevelAchieved) {
+            this.highestLevelAchieved = highestLevelAchieved;
+        }
+    }
+
+    public void updateHighestLevelIfHigher(int level) {
+        if (level > highestLevelAchieved) {
+            highestLevelAchieved = level;
+            backgroundSaveHighestLevel(level);
+        }
+    }
+
+    public void backgroundSaveHighestLevel(int level) {
+        BackgroundUpdateManager.getInstance().execute(() -> saveHighestLevel(level));
+    }
+
+    private void saveHighestLevel(int level) {
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET highestLevelAchieved = ? WHERE id = ? AND highestLevelAchieved < ?")) {
+            ps.setInt(1, level);
+            ps.setInt(2, accId);
+            ps.setInt(3, level);
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
