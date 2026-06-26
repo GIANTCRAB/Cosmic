@@ -58,6 +58,14 @@ public class PartyQuest {
         }
     }
 
+    /**
+     * Test-only constructor that supplies participants directly, bypassing the
+     * {@code Server.getInstance()} lookup performed by {@link #PartyQuest(Party)}.
+     */
+    PartyQuest(List<Character> participants) {
+        this.participants = participants;
+    }
+
     public Party getParty() {
         return party;
     }
@@ -72,6 +80,15 @@ public class PartyQuest {
             chr.setPartyQuest(null);
             //System.gc();
         }
+    }
+
+    /**
+     * Called for each participant when their reference to this PartyQuest is being dropped
+     * ({@link client.Character#setPartyQuest} set to {@code null}). Default does nothing;
+     * subclasses that grant transient effects (e.g. Nett's Pyramid's Pharaoh's Blessing) override
+     * this to strip them so they do not outlive the run.
+     */
+    public void onParticipantDetach(Character chr) {
     }
 
     public static int getExp(String PQ, int level) {

@@ -41,14 +41,14 @@ function action(mode, type, selection) {
                     selStr += "#3# Monster Carnival 2";
                 }
 
-                /*
-                if (cm.getLevel() >= 40) { NOT IMPLEMENTED
+                if (cm.getLevel() >= 40) { // WIP implementation
                     selStr += "#5# Nett's Pyramid"; 
-                } 
+                }
 
+                /*
                 if (cm.getLevel() >= 25 && cm.getLevel() <= 30) { NOT IMPLEMENTED
-                    selStr += "#6# Construction Site"; 
-                } 
+                    selStr += "#6# Construction Site";
+                }
                 */
 
                 cm.sendDimensionalMirror(selStr);

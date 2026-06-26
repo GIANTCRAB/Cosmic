@@ -26,11 +26,13 @@ import client.Character;
 import client.Client;
 import client.FamilyEntry;
 import client.Job;
+import client.QuestStatus;
 import client.Skill;
 import client.SkillFactory;
 import client.status.MonsterStatus;
 import client.status.MonsterStatusEffect;
 import config.YamlConfig;
+import constants.id.MapId;
 import constants.id.MobId;
 import constants.skills.Crusader;
 import constants.skills.FPMage;
@@ -58,9 +60,12 @@ import server.StatEffect;
 import server.TimerManager;
 import server.loot.LootManager;
 import server.maps.AbstractAnimatedMapObject;
+import server.quest.Quest;
 import server.maps.MapObjectType;
 import server.maps.MapleMap;
 import server.maps.Summon;
+import server.partyquest.PartyQuest;
+import server.partyquest.Pyramid;
 import tools.IntervalBuilder;
 import tools.PacketCreator;
 import tools.Pair;
@@ -412,28 +417,19 @@ public class Monster extends AbstractLoadedLife {
                 return false;
             }
 
-            /* pyramid not implemented
-            Pair<Integer, Integer> cool = this.getStats().getCool();
-            if (cool != null) {
-                Pyramid pq = (Pyramid) chr.getPartyQuest();
-                if (pq != null) {
-                    if (damage > 0) {
-                        if (damage >= cool.getLeft()) {
-                            if ((Math.random() * 100) < cool.getRight()) {
-                                pq.cool();
-                            } else {
-                                pq.kill();
-                            }
-                        } else {
-                            pq.kill();
-                        }
-                    } else {
-                        pq.miss();
+            if (attacker != null && MapId.isNettsPyramid(attacker.getMapId())) {
+                PartyQuest pq = attacker.getPartyQuest();
+                if (pq instanceof Pyramid py) {
+                    Pair<Integer, Integer> cool = this.getStats().getCool();
+                    int coolDamage = cool != null ? cool.getLeft() : 0;
+                    int coolProb = cool != null ? cool.getRight() : 0;
+                    switch (Pyramid.classifyHit(damage, coolDamage, coolProb, Math.random() * 100)) {
+                        case MISS -> py.miss();
+                        case COOL -> py.cool();
+                        case KILL -> py.kill();
                     }
-                    killed = true;
                 }
             }
-            */
 
             if (damage > 0) {
                 this.applyDamage(attacker, damage, stayAlive, false);
@@ -754,6 +750,39 @@ public class Monster extends AbstractLoadedLife {
             attacker.gainExp(_personalExp, _partyExp, true, false, white);
             attacker.increaseEquipExp(_personalExp);
             attacker.raiseQuestMobCount(getId());
+            tryUpdatePyramidMedalCount(attacker);
+        }
+    }
+
+    /**
+     * Counts monster kills inside Nett's Pyramid toward the "Protector of Pharaoh" medal
+     * (quest 29932, which requires 50,000 kills and tracks progress in quest record 7760,
+     * referenced by the client as {@code #R7760#}). Fully guarded so it can never affect the
+     * exp/kill flow.
+     */
+    private static void tryUpdatePyramidMedalCount(Character attacker) {
+        if (!MapId.isNettsPyramid(attacker.getMapId())) {
+            return;
+        }
+        try {
+            QuestStatus medal = attacker.getQuest(Quest.getInstance(29932));
+            if (medal.getStatus() != QuestStatus.Status.STARTED) {
+                return;
+            }
+            QuestStatus counter = attacker.getQuest(Quest.getInstance(7760));
+            int current = 0;
+            String raw = counter.getProgress(0);
+            if (!raw.isEmpty()) {
+                try {
+                    current = Integer.parseInt(raw);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            if (current < 50000) {
+                attacker.setQuestProgress(29932, 7760, Integer.toString(current + 1));
+            }
+        } catch (Exception ignored) {
+            // Medal tracking must never interfere with the kill/exp flow.
         }
     }
 
@@ -1170,9 +1199,17 @@ public class Monster extends AbstractLoadedLife {
 
         final Map<MonsterStatus, Integer> statis = status.getStati();
         if (stats.isBoss()) {
-            if (!(statis.containsKey(MonsterStatus.SPEED)
-                    && statis.containsKey(MonsterStatus.NINJA_AMBUSH)
-                    && statis.containsKey(MonsterStatus.WATK))) {
+            // The boss gate exists to keep crowd-control (stun/freeze/etc.) off bosses. An accuracy
+            // debuff is harmless, so let an AVOID-only status through for the Nett's Pyramid yetis,
+            // which are boss-flagged but rely on high evasion that the "Rage of Pharaoh" massacre
+            // skill is meant to pierce. No other boss is affected by this carve-out.
+            boolean isPyramidYetiAccuracyDebuff = MobId.isPyramidYeti(getId())
+                    && statis.size() == 1
+                    && statis.containsKey(MonsterStatus.AVOID);
+            if (!isPyramidYetiAccuracyDebuff
+                    && !(statis.containsKey(MonsterStatus.SPEED)
+                        && statis.containsKey(MonsterStatus.NINJA_AMBUSH)
+                        && statis.containsKey(MonsterStatus.WATK))) {
                 return false;
             }
         }

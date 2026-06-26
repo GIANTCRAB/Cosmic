@@ -10204,6 +10204,9 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void setPartyQuest(PartyQuest pq) {
+        if (pq == null && this.partyQuest != null) {
+            this.partyQuest.onParticipantDetach(this);
+        }
         this.partyQuest = pq;
     }
 

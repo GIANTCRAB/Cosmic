@@ -500,39 +500,35 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
         MapleLeafLogger.log(getPlayer(), true, prize);
     }
 
-    public boolean createPyramid(String mode, boolean party) {//lol
+    public boolean createPyramid(String mode, boolean party) {
         PyramidMode mod = PyramidMode.valueOf(mode);
 
         Party partyz = getPlayer().getParty();
-        MapManager mapManager = c.getChannelServer().getMapFactory();
+        Channel cs = c.getChannelServer();
 
-        MapleMap map = null;
         int mapid = MapId.NETTS_PYRAMID_SOLO_BASE;
         if (party) {
             mapid += 10000;
         }
         mapid += (mod.getMode() * 1000);
 
-        for (byte b = 0; b < 5; b++) {//They cannot warp to the next map before the timer ends (:
-            map = mapManager.getMap(mapid + b);
-            if (map.getCharacters().size() > 0) {
-                continue;
-            } else {
-                break;
-            }
-        }
-
-        if (map == null) {
-            return false;
-        }
-
         if (!party) {
-            partyz = new Party(-1, new PartyCharacter(getPlayer()));
+            PartyCharacter soloLeader = new PartyCharacter(getPlayer());
+            partyz = new Party(-1, soloLeader);
+            partyz.addMember(soloLeader);
         }
-        Pyramid py = new Pyramid(partyz, mod, map.getId());
-        getPlayer().setPartyQuest(py);
-        py.warp(mapid);
-        dispose();
+
+        // Fresh isolated instance per run: no leftover mobs from a previous run, and it is not
+        // auto-respawned -- so mobs only appear once the run starts (Pyramid's own respawn task,
+        // gated on every participant being ready).
+        MapleMap map = cs.getMapFactory().getDisposableMap(mapid);
+        Pyramid py = new Pyramid(partyz, mod, mapid, cs);
+        // Attach the Pyramid to every participant so each one's MovePlayerHandler can signal readiness.
+        for (Character participant : py.getParticipants()) {
+            participant.setPartyQuest(py);
+        }
+        dispose();              // close the NPC conversation before warping
+        py.startEntry(map);     // force-warp participants into the disposable map; run starts on readiness
         return true;
     }
 

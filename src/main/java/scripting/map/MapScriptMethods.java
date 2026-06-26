@@ -140,20 +140,22 @@ public class MapScriptMethods extends AbstractPlayerInteraction {
 
     public void touchTheSky() { //29004
         Quest quest = Quest.getInstance(29004);
+        if (isQuestCompleted(29004)) {
+            return;
+        }
         if (!isQuestStarted(29004)) {
             if (!quest.forceStart(getPlayer(), 9000066)) {
                 return;
             }
         }
         QuestStatus qs = getPlayer().getQuest(quest);
-        if (!qs.addMedalMap(getPlayer().getMapId())) {
-            return;
-        }
+        qs.addMedalMap(getPlayer().getMapId());
         String status = Integer.toString(qs.getMedalProgress());
+        getPlayer().setQuestProgress(quest.getId(), (int) quest.getInfoNumber(qs.getStatus()), status);
         getPlayer().announceUpdateQuest(DelayedQuestUpdate.UPDATE, qs, true);
         getPlayer().sendPacket(PacketCreator.earnTitleMessage(status + "/5 Completed"));
         getPlayer().sendPacket(PacketCreator.earnTitleMessage("The One Who's Touched the Sky title in progress."));
-        if (Integer.toString(qs.getMedalProgress()).equals(qs.getInfoEx(0))) {
+        if (status.equals(qs.getInfoEx(0))) {
             showInfoText("The One Who's Touched the Sky" + rewardstring);
             getPlayer().sendPacket(PacketCreator.getShowQuestCompletion(quest.getId()));
         } else {

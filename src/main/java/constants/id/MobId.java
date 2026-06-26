@@ -100,4 +100,17 @@ public class MobId {
     public static boolean isDojoBoss(int mobId) {
         return mobId >= DOJO_BOSS_MIN && mobId <= DOJO_BOSS_MAX;
     }
+
+    // Nett's Pyramid - Pharaoh Yeti family (the bonus-phase harasser). 9700023 is the "Transparent"
+    // form (eva 500, removeAfter 90s, boss-flagged) that revives into 9700021, which in turn revives
+    // into 9700022. All three can therefore appear over the course of stages 4/5.
+    public static final int PHARAOH_YETI = 9700021;
+    public static final int TRANSPARENT_PHARAOH_YETI = 9700022;
+    public static final int TRANSPARENT_PHARAOH_YETI_SPAWN = 9700023;
+
+    public static boolean isPyramidYeti(int mobId) {
+        return mobId == PHARAOH_YETI
+                || mobId == TRANSPARENT_PHARAOH_YETI
+                || mobId == TRANSPARENT_PHARAOH_YETI_SPAWN;
+    }
 }

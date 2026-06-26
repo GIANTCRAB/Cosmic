@@ -248,4 +248,20 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
             }
         }
     }
+
+    /**
+     * True iff the movement sequence contains a ground walk (movement command 0, an
+     * {@link AbsoluteLifeMovement}). This is the signal that the player has genuine control of their
+     * character, used by Nett's Pyramid to defer massacre-UI init until the client has finished
+     * loading the fieldType=23 field -- dispatching those packets during the warp fade crashes the
+     * v83 client. Floats (5/17), jumps, teleports and jump-down are excluded.
+     */
+    public static boolean hasGroundWalk(List<LifeMovementFragment> movements) {
+        for (LifeMovementFragment mvf : movements) {
+            if (mvf instanceof AbsoluteLifeMovement alm && alm.getType() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

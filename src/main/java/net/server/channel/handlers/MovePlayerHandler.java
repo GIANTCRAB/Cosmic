@@ -23,8 +23,13 @@ package net.server.channel.handlers;
 
 import client.Client;
 import net.packet.InPacket;
+import server.movement.LifeMovementFragment;
+import server.partyquest.PartyQuest;
+import server.partyquest.Pyramid;
 import tools.PacketCreator;
 import tools.exceptions.EmptyMovementException;
+
+import java.util.List;
 
 public final class MovePlayerHandler extends AbstractMovementPacketHandler {
     @Override
@@ -35,12 +40,26 @@ public final class MovePlayerHandler extends AbstractMovementPacketHandler {
             updatePosition(p, c.getPlayer(), 0);
             long movementDataLength = p.getPosition() - movementDataStart; //how many bytes were read by updatePosition
             p.seek(movementDataStart);
+            // Re-parse the movement window to inspect its commands (updatePosition applies positions
+            // but does not return them). Reuses parseMovement so no byte-size table is duplicated.
+            List<LifeMovementFragment> movements = parseMovement(p);
+            p.seek(movementDataStart);
 
             c.getPlayer().getMap().movePlayer(c.getPlayer(), c.getPlayer().getPosition());
             if (c.getPlayer().isHidden()) {
                 c.getPlayer().getMap().broadcastGMMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), p, movementDataLength), false);
             } else {
                 c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), p, movementDataLength), false);
+            }
+
+            // A ground walk means the client has finished loading the field and has control. Nett's
+            // Pyramid uses this as the readiness signal to start the run and send massacre UI init;
+            // sending those packets earlier (during the warp fade) crashes the v83 client.
+            if (hasGroundWalk(movements)) {
+                PartyQuest pq = c.getPlayer().getPartyQuest();
+                if (pq instanceof Pyramid py) {
+                    py.onPlayerMove(c.getPlayer());
+                }
             }
         } catch (EmptyMovementException e) {
         }
