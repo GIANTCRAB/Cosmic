@@ -9,6 +9,9 @@
  */
 package client.inventory;
 
+import config.YamlConfig;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EquipmentLevelModelTest {
+    private int previousMax;
+
+    @BeforeEach
+    void saveConfiguredCeiling() {
+        previousMax = YamlConfig.config.server.USE_EQUIPMNT_LVLUP;
+    }
+
+    @AfterEach
+    void restoreConfiguredCeiling() {
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP = previousMax;
+    }
 
     @Test
     void networkLevelClampsToClientCap() {
@@ -49,7 +63,8 @@ class EquipmentLevelModelTest {
 
     @Test
     void isAtTrueMaxUsesConfiguredCeiling() {
-        assertFalse(EquipmentLevelModel.isAtTrueMax(99));   // config.yaml default is 100
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP = 100;
+        assertFalse(EquipmentLevelModel.isAtTrueMax(99));
         assertTrue(EquipmentLevelModel.isAtTrueMax(100));
         assertTrue(EquipmentLevelModel.isAtTrueMax(150));
     }
