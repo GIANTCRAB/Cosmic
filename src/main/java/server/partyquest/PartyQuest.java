@@ -58,6 +58,14 @@ public class PartyQuest {
         }
     }
 
+    /**
+     * Test-only constructor that supplies participants directly, bypassing the
+     * {@code Server.getInstance()} lookup performed by {@link #PartyQuest(Party)}.
+     */
+    PartyQuest(List<Character> participants) {
+        this.participants = participants;
+    }
+
     public Party getParty() {
         return party;
     }

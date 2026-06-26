@@ -33,10 +33,13 @@ import constants.skills.Hero;
 import constants.skills.Paladin;
 import constants.skills.Priest;
 import constants.skills.SuperGM;
+import constants.id.MapId;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
 import server.StatEffect;
+import server.partyquest.PartyQuest;
+import server.partyquest.Pyramid;
 import server.life.Monster;
 import tools.PacketCreator;
 
@@ -74,6 +77,21 @@ public final class SpecialMoveHandler extends AbstractPacketHandler {
             chr.setDojoEnergy(0);
             c.sendPacket(PacketCreator.getEnergy("energy", chr.getDojoEnergy()));
             c.sendPacket(PacketCreator.serverNotice(5, "As you used the secret skill, your energy bar has been reset."));
+        }
+        if (skillid % 10000000 == 1020) {
+            // "Rage of Pharaoh" - the Nett's Pyramid massacre skill. It is never learned via SP,
+            // so mirror the Dojo handling: consume a charge, force level 1, and only resolve inside
+            // an active Pyramid run. NOTE: assumes the client casts this through the normal
+            // SPECIAL_MOVE packet (skill 1020). If a real client turns out to send a dedicated
+            // opcode instead, an explicit RecvOpcode + handler will be required (TODO).
+            if (!MapId.isNettsPyramid(chr.getMapId())) {
+                return;
+            }
+            PartyQuest pq = chr.getPartyQuest();
+            if (!(pq instanceof Pyramid py) || !py.useSkill()) {
+                return;
+            }
+            skillLevel = 1;
         }
         if (skillLevel == 0 || skillLevel != __skillLevel) {
             return;
