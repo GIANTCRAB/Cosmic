@@ -332,6 +332,13 @@ server:
     MOB_STATUS_AGGRO_INTERVAL: 5000     #Interval in milliseconds between aggro logistics update.
     USE_AUTOAGGRO_NEARBY: true         #Mobs start following the player when approached.
 
+    #Distance-Weighted Aggro Configuration (DistanceMonsterAggroCoordinator)
+    USE_DISTANCE_BASED_AGGRO: true    #When true, maps use DistanceMonsterAggroCoordinator instead of DefaultMonsterAggroCoordinator. Damage aggro is scaled by attacker-to-mob distance.
+    AGGRO_MELEE_RANGE_SQ: 40000       #Euclidean distance squared defining melee reach (~200px). Hits at or inside this distance earn AGGRO_MELEE_MULTIPLIER and aggro never decays while held.
+    AGGRO_MAX_RANGE_SQ: 722500         #Euclidean distance squared defining typical max range (~850px; server ranged broadcast limit). Hits at or beyond this distance earn AGGRO_MIN_MULTIPLIER.
+    AGGRO_MELEE_MULTIPLIER: 2.0        #Aggro multiplier applied to damage dealt from melee range.
+    AGGRO_MIN_MULTIPLIER: 0.1          #Minimum aggro multiplier (applied at/over max range). Multiplier interpolates linearly between melee and max range.
+
     #Some Gameplay Enhancing Configurations
     #Scroll Configuration
     USE_PERFECT_GM_SCROLL: true     #Scrolls from GMs never uses up slots nor fails.

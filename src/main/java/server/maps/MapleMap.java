@@ -39,6 +39,8 @@ import constants.inventory.ItemConstants;
 import net.packet.Packet;
 import net.server.Server;
 import net.server.channel.Channel;
+import net.server.coordinator.world.DefaultMonsterAggroCoordinator;
+import net.server.coordinator.world.DistanceMonsterAggroCoordinator;
 import net.server.coordinator.world.MonsterAggroCoordinator;
 import net.server.services.task.channel.MobMistService;
 import net.server.services.task.channel.OverallService;
@@ -208,7 +210,9 @@ public class MapleMap {
         objectRLock = objectLock.readLock();
         objectWLock = objectLock.writeLock();
 
-        aggroMonitor = new MonsterAggroCoordinator();
+        aggroMonitor = YamlConfig.config.server.USE_DISTANCE_BASED_AGGRO
+                ? new DistanceMonsterAggroCoordinator()
+                : new DefaultMonsterAggroCoordinator();
     }
 
     public void setEventInstance(EventInstanceManager eim) {

@@ -180,6 +180,13 @@ public class ServerConfig {
     public int MOB_STATUS_AGGRO_INTERVAL;
     public boolean USE_AUTOAGGRO_NEARBY;
 
+    //Distance-Weighted Aggro Configuration (DistanceMonsterAggroCoordinator)
+    public boolean USE_DISTANCE_BASED_AGGRO;
+    public long AGGRO_MELEE_RANGE_SQ;
+    public long AGGRO_MAX_RANGE_SQ;
+    public double AGGRO_MELEE_MULTIPLIER;
+    public double AGGRO_MIN_MULTIPLIER;
+
     //Some Gameplay Enhancing Configurations
     //Scroll Configuration
     public boolean USE_PERFECT_GM_SCROLL;
