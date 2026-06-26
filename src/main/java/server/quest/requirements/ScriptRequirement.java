@@ -29,16 +29,16 @@ import server.quest.QuestRequirementType;
  * @author Ronan
  */
 public class ScriptRequirement extends AbstractQuestRequirement {
-    private boolean reqScript;
+    private String scriptName = "";
 
     public ScriptRequirement(Quest quest, Data data) {
-        super(QuestRequirementType.BUFF);
+        super(QuestRequirementType.SCRIPT);
         processData(data);
     }
 
     @Override
     public void processData(Data data) {
-        reqScript = !DataTool.getString(data, "").isEmpty();
+        scriptName = DataTool.getString(data, "");
     }
 
     @Override
@@ -47,6 +47,10 @@ public class ScriptRequirement extends AbstractQuestRequirement {
     }
 
     public boolean get() {
-        return reqScript;
+        return !scriptName.isEmpty();
+    }
+
+    public String getScriptName() {
+        return scriptName;
     }
 }

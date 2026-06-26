@@ -1,7 +1,7 @@
 var status = -1;
 
 function start(mode, type, selection) {
-    if (qm.canHold(1142132) && !qm.haveItem(1142132, 1) && qm.getPlayer().getLevel() >= 120 && ((qm.getPlayer().getJob() / 100) | 0) == 21) {
+    if (qm.canHold(1142132) && !qm.haveItem(1142132, 1) && qm.getPlayer().getLevel() >= 120 && ((qm.getPlayer().getJob().getId() / 100) | 0) == 21) {
         qm.gainItem(1142132, 1);
         qm.forceStartQuest();
         qm.forceCompleteQuest();
@@ -10,7 +10,7 @@ function start(mode, type, selection) {
 }
 
 function end(mode, type, selection) {
-    if (qm.canHold(1142132) && !qm.haveItem(1142132, 1) && qm.getPlayer().getLevel() >= 120 && ((qm.getPlayer().getJob() / 100) | 0) == 21) {
+    if (qm.canHold(1142132) && !qm.haveItem(1142132, 1) && qm.getPlayer().getLevel() >= 120 && ((qm.getPlayer().getJob().getId() / 100) | 0) == 21) {
         qm.gainItem(1142132, 1);
         qm.forceStartQuest();
         qm.forceCompleteQuest();

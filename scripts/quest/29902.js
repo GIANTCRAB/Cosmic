@@ -28,7 +28,7 @@
 var status = -1;
 
 function start(mode, type, selection) {
-    if (qm.forceStartQuest()) {
+    if (qm.tryStartQuest()) {
         qm.showInfoText("You have earned the <Veteran Adventurer> title. You can receive a Medal from NPC Dalair.");
     }
     qm.dispose();
@@ -45,7 +45,7 @@ function end(mode, type, selection) {
         } else if (status == 1) {
             if (qm.canHold(1142109)) {
                 qm.gainItem(1142109);
-                qm.forceCompleteQuest();
+                qm.tryCompleteQuest();
                 qm.dispose();
             } else {
                 qm.sendNext("Please make room in your inventory");//NOT GMS LIKE

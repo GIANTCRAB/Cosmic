@@ -665,6 +665,17 @@ public class Quest {
         }
     }
 
+    public String getScriptName(boolean checkEnd) {
+        Map<QuestRequirementType, AbstractQuestRequirement> reqs = !checkEnd ? startReqs : completeReqs;
+        AbstractQuestRequirement mqr = reqs.get(QuestRequirementType.SCRIPT);
+
+        if (mqr != null) {
+            return ((ScriptRequirement) mqr).getScriptName();
+        } else {
+            return "";
+        }
+    }
+
     public boolean hasNextQuestAction() {
         Map<QuestActionType, AbstractQuestAction> acts = completeActs;
         AbstractQuestAction mqa = acts.get(QuestActionType.NEXTQUEST);

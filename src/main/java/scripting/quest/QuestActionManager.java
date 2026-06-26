@@ -72,6 +72,46 @@ public class QuestActionManager extends NPCConversationManager {
         forceCompleteQuest();
     }
 
+    /**
+     * Starts the quest through the normal requirement-checked path (Quest.canStart / Quest.start),
+     * as opposed to forceStartQuest which bypasses all checks.
+     *
+     * @return true if the quest was started (requirements met).
+     */
+    public boolean tryStartQuest() {
+        try {
+            Quest q = Quest.getInstance(quest);
+            int npc = getNpc();
+            if (q.canStart(getPlayer(), npc)) {
+                q.start(getPlayer(), npc);
+                return true;
+            }
+        } catch (NullPointerException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Completes the quest through the normal requirement-checked path (Quest.canComplete / Quest.complete),
+     * as opposed to forceCompleteQuest which bypasses all checks.
+     *
+     * @return true if the quest was completed (requirements met).
+     */
+    public boolean tryCompleteQuest() {
+        try {
+            Quest q = Quest.getInstance(quest);
+            int npc = getNpc();
+            if (q.canComplete(getPlayer(), npc)) {
+                q.complete(getPlayer(), npc);
+                return true;
+            }
+        } catch (NullPointerException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
     @Override
     public void gainExp(int gain) {
         ExpAction.runAction(getPlayer(), gain);

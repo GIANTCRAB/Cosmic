@@ -31,6 +31,10 @@ import server.quest.Quest;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,13 +52,33 @@ public class QuestScriptManager extends AbstractScriptManager {
         return instance;
     }
 
-    private ScriptEngine getQuestScriptEngine(Client c, short questid) {
-        ScriptEngine engine = getInvocableScriptEngine("quest/" + questid + ".js", c);
-        if (engine == null && GameConstants.isMedalQuest(questid)) {
-            engine = getInvocableScriptEngine("quest/medalQuest.js", c);   // start generic medal quest
+    private ScriptEngine getQuestScriptEngine(Client c, short questid, boolean start) {
+        // Try candidate script paths in order of precedence; the first one that exists on disk wins.
+        boolean isMedalQuest = GameConstants.isMedalQuest(questid);
+        for (String path : resolveQuestScriptCandidates(Quest.getInstance(questid).getScriptName(start), questid, isMedalQuest)) {
+            ScriptEngine engine = getInvocableScriptEngine(path, c);
+            if (engine != null) {
+                return engine;
+            }
         }
+        return null;
+    }
 
-        return engine;
+    /**
+     * Pure computation of the ordered candidate script paths for a quest, without touching the filesystem
+     * or loading any WZ data. Precedence: WZ startscript/endscript name, then quest/&lt;id&gt;.js, then the
+     * generic medalQuest.js fallback. Used for unit testing the precedence logic.
+     */
+    protected static List<String> resolveQuestScriptCandidates(String wzScriptName, short questid, boolean isMedalQuest) {
+        List<String> candidates = new ArrayList<>(3);
+        if (wzScriptName != null && !wzScriptName.isEmpty()) {
+            candidates.add("quest/" + wzScriptName + ".js");
+        }
+        candidates.add("quest/" + questid + ".js");
+        if (isMedalQuest) {
+            candidates.add("quest/medalQuest.js");
+        }
+        return candidates;
     }
 
     public void start(Client c, short questid, int npc) {
@@ -72,7 +96,7 @@ public class QuestScriptManager extends AbstractScriptManager {
                     return;
                 }
 
-                ScriptEngine engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid, true);
                 if (engine == null) {
                     log.warn("START Quest {} is uncoded.", questid);
                     qm.dispose();
@@ -124,7 +148,7 @@ public class QuestScriptManager extends AbstractScriptManager {
                     return;
                 }
 
-                ScriptEngine engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid, false);
                 if (engine == null) {
                     log.warn("END Quest {} is uncoded.", questid);
                     qm.dispose();
@@ -166,7 +190,7 @@ public class QuestScriptManager extends AbstractScriptManager {
             if (c.canClickNPC()) {
                 qms.put(c, qm);
 
-                ScriptEngine engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid, true);
                 if (engine == null) {
                     //FilePrinter.printError(FilePrinter.QUEST_UNCODED, "RAISE Quest " + questid + " is uncoded.");
                     qm.dispose();
