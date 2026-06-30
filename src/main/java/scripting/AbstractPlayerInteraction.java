@@ -369,6 +369,10 @@ public class AbstractPlayerInteraction {
         return c.getPlayer().getQuest(Quest.getInstance(id)).getStatus().getId();
     }
 
+    public int getMedalItemForQuest(int questId) {
+        return Quest.getInstance(questId).getMedalRequirement();
+    }
+
     private QuestStatus.Status getQuestStat(int id) {
         return c.getPlayer().getQuest(Quest.getInstance(id)).getStatus();
     }
