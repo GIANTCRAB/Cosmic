@@ -709,6 +709,8 @@ public class Quest {
     }
 
     public static void loadAllQuests() {
+        PartyQuestRegistry.load(questData);
+
         final Map<Integer, Quest> loadedQuests = new HashMap<>();
         final Map<Integer, Integer> loadedInfoNumberQuests = new HashMap<>();
 

@@ -378,6 +378,7 @@ server:
 
     #Quest Configuration
     USE_QUEST_RATE: true           #Exp/Meso gained by quests uses fixed server exp/meso rate times quest rate as multiplier, instead of player rates.
+    USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT: true  #When true, the max-level cap on normal quests is bypassed (over-levelled characters can still start/complete them). Party-quest entry quests keep their cap regardless, and party-quest event scripts keep their own level gates.
 
     #Quest Points Configuration
     QUEST_POINT_REPEATABLE_INTERVAL: 25  #Minimum interval between repeatable quest completions for quest points to be awarded.

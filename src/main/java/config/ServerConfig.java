@@ -226,6 +226,7 @@ public class ServerConfig {
 
     //Quest Configuration
     public boolean USE_QUEST_RATE;
+    public boolean USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT;
 
     //Quest Points Configuration
     public int QUEST_POINT_REPEATABLE_INTERVAL;

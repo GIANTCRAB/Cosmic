@@ -22,8 +22,10 @@
 package server.quest.requirements;
 
 import client.Character;
+import config.YamlConfig;
 import provider.Data;
 import provider.DataTool;
+import server.quest.PartyQuestRegistry;
 import server.quest.Quest;
 import server.quest.QuestRequirementType;
 
@@ -32,10 +34,12 @@ import server.quest.QuestRequirementType;
  */
 public class MaxLevelRequirement extends AbstractQuestRequirement {
     private int maxLevel;
+    private final int questID;
 
 
     public MaxLevelRequirement(Quest quest, Data data) {
         super(QuestRequirementType.MAX_LEVEL);
+        this.questID = quest.getId();
         processData(data);
     }
 
@@ -50,6 +54,22 @@ public class MaxLevelRequirement extends AbstractQuestRequirement {
 
     @Override
     public boolean check(Character chr, Integer npcid) {
+        if (shouldBypassMaxLevel(questID)) {
+            return true;
+        }
         return maxLevel >= chr.getLevel();
+    }
+
+    /**
+     * Whether the max-level cap should be ignored for the given quest. Returns {@code true} only when
+     * the {@code USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT} config flag is enabled AND the quest is not a
+     * party-quest entry quest (party quests keep their cap here; their event scripts gate levels too).
+     *
+     * <p>Extracted as a package-private static helper so the gating logic is unit-testable without
+     * instantiating {@link Quest} (whose class initialisation reads WZ data).</p>
+     */
+    static boolean shouldBypassMaxLevel(int questId) {
+        return YamlConfig.config.server.USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT
+                && !PartyQuestRegistry.isPartyQuest(questId);
     }
 }
