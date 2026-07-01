@@ -24,6 +24,7 @@ package server.partyquest;
 
 import client.BuffStat;
 import client.Character;
+import client.QuestStatus;
 import client.Skill;
 import config.YamlConfig;
 import constants.id.ItemId;
@@ -37,6 +38,7 @@ import server.TimerManager;
 import server.life.LifeFactory;
 import server.life.Monster;
 import server.maps.MapleMap;
+import server.quest.Quest;
 import tools.PacketCreator;
 import client.status.MonsterStatus;
 import client.status.MonsterStatusEffect;
@@ -145,6 +147,12 @@ public class Pyramid extends PartyQuest {
         return partySize > 1 ? base + partySize : base;
     }
 
+    // Quest + info-quest IDs backing the "Protector of Pharaoh" medal (Nett's Pyramid). The client
+    // renders the running counter via the #R7760# macro, which reads info quest 7760's progress slot.
+    static final int MEDAL_QUEST = 29932;
+    static final int MEDAL_INFO_QUEST = 7760;
+    static final int MEDAL_KILL_GOAL = 50000;
+
     /**
      * Final rank (0=S, 1=A, 2=B, 3=C, 4=D) derived from how many hits/cool the player landed.
      * A full clear (stage 5) is graded against the full tier table; an early exit uses a coarser one.
@@ -178,6 +186,24 @@ public class Pyramid extends PartyQuest {
             default -> 0;
         };
         return (base + (kills * (m + 1) * 2) + (cools * (m + 1) * 10)) * expRate;
+    }
+
+    /**
+     * Adds this run's {@code kill + cool} contribution to the "Protector of Pharaoh" medal counter,
+     * mirroring the canonical post-run handler: a null/blank counter starts at 0, and the running
+     * total is capped at {@link #MEDAL_KILL_GOAL}. Pure (String in -> String out) so the
+     * null-handling, parse-failure recovery, accumulation, and cap are unit-testable without
+     * {@link Character} or WZ bootstrap.
+     */
+    static String applyMedalRun(String currentData, int runKills, int runCools) {
+        int current = 0;
+        if (currentData != null && !currentData.isEmpty()) {
+            try {
+                current = Integer.parseInt(currentData);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return Integer.toString(Math.min(MEDAL_KILL_GOAL, current + runKills + runCools));
     }
 
     /**
@@ -667,6 +693,19 @@ public class Pyramid extends PartyQuest {
         }
     }
 
+    /**
+     * Updates the "Protector of Pharaoh" medal counter for a participant, adding this run's
+     * {@code kill + cool} to info quest {@value #MEDAL_INFO_QUEST}'s progress slot. Reads and
+     * writes the same slot (7760) so it stays consistent with both the {@code #R7760#} client
+     * display and Duarte's progress read; {@code setQuestProgress} announces the infoex update so
+     * the counter refreshes live. Runs on every exit (pass or fail), matching GMS where every
+     * pyramid kill counts toward the goal.
+     */
+    private void updateMedalProgress(Character chr) {
+        String current = chr.getQuest(Quest.getInstance(MEDAL_INFO_QUEST)).getProgress(0);
+        chr.setQuestProgress(MEDAL_QUEST, MEDAL_INFO_QUEST, applyMedalRun(current, kill, cool));
+    }
+
     public void sendScore(Character chr) {
         if (exp == 0) {
             int totalkills = (kill + cool);
@@ -675,5 +714,6 @@ public class Pyramid extends PartyQuest {
         }
         chr.sendPacket(PacketCreator.pyramidScore(rank, exp));
         chr.gainExp(exp, true, true);
+        updateMedalProgress(chr);
     }
 }

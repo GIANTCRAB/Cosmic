@@ -26,7 +26,6 @@ import client.Character;
 import client.Client;
 import client.FamilyEntry;
 import client.Job;
-import client.QuestStatus;
 import client.Skill;
 import client.SkillFactory;
 import client.status.MonsterStatus;
@@ -60,7 +59,6 @@ import server.StatEffect;
 import server.TimerManager;
 import server.loot.LootManager;
 import server.maps.AbstractAnimatedMapObject;
-import server.quest.Quest;
 import server.maps.MapObjectType;
 import server.maps.MapleMap;
 import server.maps.Summon;
@@ -750,39 +748,6 @@ public class Monster extends AbstractLoadedLife {
             attacker.gainExp(_personalExp, _partyExp, true, false, white);
             attacker.increaseEquipExp(_personalExp);
             attacker.raiseQuestMobCount(getId());
-            tryUpdatePyramidMedalCount(attacker);
-        }
-    }
-
-    /**
-     * Counts monster kills inside Nett's Pyramid toward the "Protector of Pharaoh" medal
-     * (quest 29932, which requires 50,000 kills and tracks progress in quest record 7760,
-     * referenced by the client as {@code #R7760#}). Fully guarded so it can never affect the
-     * exp/kill flow.
-     */
-    private static void tryUpdatePyramidMedalCount(Character attacker) {
-        if (!MapId.isNettsPyramid(attacker.getMapId())) {
-            return;
-        }
-        try {
-            QuestStatus medal = attacker.getQuest(Quest.getInstance(29932));
-            if (medal.getStatus() != QuestStatus.Status.STARTED) {
-                return;
-            }
-            QuestStatus counter = attacker.getQuest(Quest.getInstance(7760));
-            int current = 0;
-            String raw = counter.getProgress(0);
-            if (!raw.isEmpty()) {
-                try {
-                    current = Integer.parseInt(raw);
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            if (current < 50000) {
-                attacker.setQuestProgress(29932, 7760, Integer.toString(current + 1));
-            }
-        } catch (Exception ignored) {
-            // Medal tracking must never interfere with the kill/exp flow.
         }
     }
 

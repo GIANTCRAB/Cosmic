@@ -86,9 +86,16 @@ function handleEntrance(selection) {
         } else if (selected == 4) {
             cm.sendNext("Inside Pharaoh Yeti's Tomb, you can acquire a #e#b#t2022613##k#n by proving yourself capable of defeating the #bPharaoh Jr. Yeti#k, the Pharaoh's clone. Inside that box lies a very special treasure. It is the #e#b#t1132012##k#n.\r\n#i1132012:# #t1132012#\r\n\r\n And if you are somehow able to survive Hell Mode, you will receive the #e#b#t1132013##k#n.\r\n\r\n#i1132013:# #t1132013#\r\n\r\n Though, of course, Nett won't allow that to happen.");
         } else if (selected == 5) {
-            var progress = cm.getQuestProgressInt(29932);
+            var progress = cm.getQuestProgressInt(7760);
             if (progress >= 50000) {
-                cm.sendOk("You have proven yourself a true Protector of Pharaoh. Nett acknowledges your strength.");
+                if (cm.canHold(1142142) && !cm.haveItem(1142142)) {
+                    cm.gainItem(1142142, 1);
+                    cm.startQuest(29932);
+                    cm.completeQuest(29932);
+                    cm.sendOk("You have proven yourself a true Protector of Pharaoh. Nett acknowledges your strength and bestows the medal upon you.");
+                } else {
+                    cm.sendOk("Please make room in your EQUIP inventory to receive the <Protector of Pharaoh> Medal.");
+                }
             } else {
                 cm.sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b" + progress + "#k / 50000.");
             }
@@ -163,7 +170,7 @@ function validateEntry(modeSelection) {
         cm.sendOk("You must be Lv. 40+ to enter this PQ.");
         return false;
     }
-    if (modeSelection < 3 && cm.getPlayer().getLevel() > 60) {
+    if (modeSelection == 3 && cm.getPlayer().getLevel() < 60) {
         cm.sendOk("Only Hell mode is available for players that are over Lv. 60.");
         return false;
     }

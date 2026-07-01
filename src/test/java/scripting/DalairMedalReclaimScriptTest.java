@@ -46,9 +46,11 @@ class DalairMedalReclaimScriptTest {
 
     private static final int QUEST_BEGINNER_ADVENTURER = 29900;
     private static final int QUEST_OUTSTANDING_CITIZEN = 29508;
+    private static final int QUEST_PROTECTOR_OF_PHARAOH = 29932;
     private static final int QUEST_NON_MEDAL = 1000;   // any short-range, non-medal quest id
     private static final int MEDAL_BEGINNER_ADVENTURER = 1142107;
     private static final int MEDAL_OUTSTANDING_CITIZEN = 1142081;
+    private static final int MEDAL_PROTECTOR_OF_PHARAOH = 1142142;
 
     @BeforeAll
     static void muteGraal() {
@@ -189,6 +191,34 @@ class DalairMedalReclaimScriptTest {
         verify(cm).gainMeso(-150_000_000);
         verify(cm).gainItem(eq(MEDAL_BEGINNER_ADVENTURER), anyShort());
         verify(cm).gainItem(eq(MEDAL_OUTSTANDING_CITIZEN), anyShort());
+    }
+
+    @Test
+    void recover_includesNettsPyramidMedalOnceQuestCompleted() throws Exception {
+        // After Duarte grants the "Protector of Pharaoh" medal (quest 29932 COMPLETED), a player who
+        // discards it must be able to recover it here. viewMedalItem for 29932 is 1142142 (WZ), so
+        // getMedalItemForQuest resolves it and the medal is listed as recoverable.
+        ScriptEngine engine = load();
+        NPCConversationManager cm = mock(NPCConversationManager.class);
+        Character chr = mock(Character.class);
+        List<QuestStatus> completed = Collections.singletonList(completedQuest(QUEST_PROTECTOR_OF_PHARAOH));
+
+        when(cm.getPlayer()).thenReturn(chr);
+        when(chr.getCompletedQuests()).thenReturn(completed);
+        when(cm.getMedalItemForQuest(QUEST_PROTECTOR_OF_PHARAOH)).thenReturn(MEDAL_PROTECTOR_OF_PHARAOH);
+        when(cm.haveItemWithId(MEDAL_PROTECTOR_OF_PHARAOH, true)).thenReturn(false);
+        when(cm.getLevel()).thenReturn(40);
+        when(cm.getMeso()).thenReturn(200_000_000);
+        when(cm.canHold(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(true);
+        engine.put("cm", cm);
+        Invocable iv = (Invocable) engine;
+
+        iv.invokeFunction("start");
+        selectOption(iv, 1);
+        confirmYes(iv);
+
+        verify(cm).gainMeso(-120_000_000);   // 3,000,000 * level 40
+        verify(cm).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
     }
 
     @Test
