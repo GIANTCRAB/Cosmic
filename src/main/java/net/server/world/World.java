@@ -2058,7 +2058,11 @@ public class World {
     }
 
     public void deleteRelationship(int playerId, int partnerId) {
-        int relationshipId = relationships.get(playerId);
+        int relationshipId = getRelationshipId(playerId);
+        if (relationshipId <= 0) {
+            return;
+        }
+
         deleteRelationshipFromDb(relationshipId);
 
         relationshipCouples.remove(relationshipId);

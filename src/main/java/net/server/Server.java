@@ -34,6 +34,7 @@ import client.processor.npc.FredrickProcessor;
 import config.EnvResolver;
 import config.YamlConfig;
 import constants.game.GameConstants;
+import constants.id.ItemId;
 import constants.inventory.ItemConstants;
 import constants.net.OpcodeConstants;
 import constants.net.ServerConstants;
@@ -901,6 +902,7 @@ public class Server {
             applyAllWorldTransfers(con);
             setAdminPasswordIfConfigured(con);
             PlayerNPC.loadRunningRankData(con, worldCount);
+            clearDanglingMarriages(con);
         } catch (SQLException sqle) {
             log.error("Failed to run all startup-bound database tasks", sqle);
             throw new IllegalStateException(sqle);
@@ -993,6 +995,116 @@ public class Server {
             ps.executeUpdate();
         }
         log.info("Admin account password applied from ADMIN_PASSWORD environment variable.");
+    }
+
+    private static void clearDanglingMarriages(Connection con) throws SQLException {
+        int cleaned = 0;
+
+        try (PreparedStatement ps = con.prepareStatement(
+                "SELECT m.marriageid, m.husbandid, m.wifeid FROM marriages m " +
+                        "LEFT JOIN characters c1 ON m.husbandid = c1.id " +
+                        "LEFT JOIN characters c2 ON m.wifeid = c2.id " +
+                        "WHERE c1.id IS NULL OR c2.id IS NULL")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int marriageId = rs.getInt("marriageid");
+                    int husbandId = rs.getInt("husbandid");
+                    int wifeId = rs.getInt("wifeid");
+
+                    for (int pid : new int[]{husbandId, wifeId}) {
+                        try (PreparedStatement ps2 = con.prepareStatement("SELECT id FROM characters WHERE id = ?")) {
+                            ps2.setInt(1, pid);
+                            try (ResultSet rs2 = ps2.executeQuery()) {
+                                if (rs2.next()) {
+                                    try (PreparedStatement ps3 = con.prepareStatement(
+                                            "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
+                                        ps3.setInt(1, pid);
+                                        ps3.executeUpdate();
+                                    }
+                                    clearWeddingRingEquips(con, pid);
+                                }
+                            }
+                        }
+                    }
+
+                    try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM marriages WHERE marriageid = ?")) {
+                        ps2.setInt(1, marriageId);
+                        ps2.executeUpdate();
+                    }
+                    cleaned++;
+                }
+            }
+        }
+
+        try (PreparedStatement ps = con.prepareStatement(
+                "SELECT c.id FROM characters c " +
+                        "LEFT JOIN characters p ON c.partnerId = p.id " +
+                        "WHERE c.partnerId > 0 AND p.id IS NULL")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int charId = rs.getInt("id");
+                    try (PreparedStatement ps2 = con.prepareStatement(
+                            "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
+                        ps2.setInt(1, charId);
+                        ps2.executeUpdate();
+                    }
+                    clearWeddingRingEquips(con, charId);
+                    cleaned++;
+                }
+            }
+        }
+
+        try (PreparedStatement ps = con.prepareStatement(
+                "SELECT r.id FROM rings r " +
+                        "LEFT JOIN characters c ON r.partnerChrId = c.id " +
+                        "WHERE c.id IS NULL")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int ringId = rs.getInt("id");
+                    try (PreparedStatement ps2 = con.prepareStatement(
+                            "UPDATE inventoryequipment SET ringid = -1 WHERE ringid = ?")) {
+                        ps2.setInt(1, ringId);
+                        ps2.executeUpdate();
+                    }
+                    try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM rings WHERE id = ?")) {
+                        ps2.setInt(1, ringId);
+                        ps2.executeUpdate();
+                    }
+                }
+            }
+        }
+
+        if (cleaned > 0) {
+            log.info("Cleared {} dangling marriage entry/entries on startup.", cleaned);
+        }
+    }
+
+    private static void clearWeddingRingEquips(Connection con, int characterId) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(
+                "SELECT ii.inventoryitemid FROM inventoryitems ii " +
+                        "INNER JOIN inventoryequipment ie ON ii.inventoryitemid = ie.inventoryitemid " +
+                        "WHERE ii.characterid = ? AND ii.itemid IN (?, ?, ?, ?)")) {
+            ps.setInt(1, characterId);
+            ps.setInt(2, ItemId.WEDDING_RING_MOONSTONE);
+            ps.setInt(3, ItemId.WEDDING_RING_STAR);
+            ps.setInt(4, ItemId.WEDDING_RING_GOLDEN);
+            ps.setInt(5, ItemId.WEDDING_RING_SILVER);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int inventoryitemid = rs.getInt("inventoryitemid");
+                    try (PreparedStatement ps2 = con.prepareStatement(
+                            "DELETE FROM inventoryequipment WHERE inventoryitemid = ?")) {
+                        ps2.setInt(1, inventoryitemid);
+                        ps2.executeUpdate();
+                    }
+                    try (PreparedStatement ps2 = con.prepareStatement(
+                            "DELETE FROM inventoryitems WHERE inventoryitemid = ?")) {
+                        ps2.setInt(1, inventoryitemid);
+                        ps2.executeUpdate();
+                    }
+                }
+            }
+        }
     }
 
     private void initializeTimelyTasks(ChannelDependencies channelDependencies) {

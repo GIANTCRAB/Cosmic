@@ -35,6 +35,7 @@ public class HardcoreProcessor {
 
         chr.leaveParty();
         chr.leaveFamily();
+        chr.leaveMarriage();
 
         final var deleted = chr.deletePermanently();
         if (!deleted) {

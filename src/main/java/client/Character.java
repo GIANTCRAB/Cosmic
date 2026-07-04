@@ -2300,6 +2300,77 @@ public class Character extends AbstractCharacterObject {
                 ps.executeUpdate();
             }
 
+            // Clean up marriage data so the surviving partner is not left with a dangling partnerId.
+            try (PreparedStatement ps = con.prepareStatement(
+                    "SELECT marriageid, husbandid, wifeid FROM marriages WHERE husbandid = ? OR wifeid = ?")) {
+                ps.setInt(1, cid);
+                ps.setInt(2, cid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        int husbandId = rs.getInt("husbandid");
+                        int wifeId = rs.getInt("wifeid");
+                        int partnerId = (cid == husbandId) ? wifeId : husbandId;
+
+                        Character partner = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterById(partnerId);
+                        if (partner != null) {
+                            partner.dissolveMarriageState("Your partner has been deleted. The marriage has been dissolved.");
+                        }
+
+                        try (PreparedStatement ps2 = con.prepareStatement(
+                                "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
+                            ps2.setInt(1, partnerId);
+                            ps2.executeUpdate();
+                        }
+
+                        try (PreparedStatement ps2 = con.prepareStatement(
+                                "SELECT ii.inventoryitemid FROM inventoryitems ii " +
+                                        "INNER JOIN inventoryequipment ie ON ii.inventoryitemid = ie.inventoryitemid " +
+                                        "WHERE ii.characterid = ? AND ii.itemid IN (?, ?, ?, ?)")) {
+                            ps2.setInt(1, partnerId);
+                            ps2.setInt(2, ItemId.WEDDING_RING_MOONSTONE);
+                            ps2.setInt(3, ItemId.WEDDING_RING_STAR);
+                            ps2.setInt(4, ItemId.WEDDING_RING_GOLDEN);
+                            ps2.setInt(5, ItemId.WEDDING_RING_SILVER);
+                            try (ResultSet rs2 = ps2.executeQuery()) {
+                                while (rs2.next()) {
+                                    int inventoryitemid = rs2.getInt("inventoryitemid");
+                                    try (PreparedStatement ps3 = con.prepareStatement(
+                                            "DELETE FROM inventoryequipment WHERE inventoryitemid = ?")) {
+                                        ps3.setInt(1, inventoryitemid);
+                                        ps3.executeUpdate();
+                                    }
+                                    try (PreparedStatement ps3 = con.prepareStatement(
+                                            "DELETE FROM inventoryitems WHERE inventoryitemid = ?")) {
+                                        ps3.setInt(1, inventoryitemid);
+                                        ps3.executeUpdate();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = con.prepareStatement("SELECT id FROM rings WHERE partnerChrId = ?")) {
+                ps.setInt(1, cid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        int ringId = rs.getInt("id");
+                        try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM rings WHERE id = ?")) {
+                            ps2.setInt(1, ringId);
+                            ps2.executeUpdate();
+                        }
+                        CashIdGenerator.freeCashId(ringId);
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = con.prepareStatement("DELETE FROM marriages WHERE husbandid = ? OR wifeid = ?")) {
+                ps.setInt(1, cid);
+                ps.setInt(2, cid);
+                ps.executeUpdate();
+            }
+
             try (PreparedStatement ps = con.prepareStatement("DELETE FROM characters WHERE id = ?")) {
                 ps.setInt(1, cid);
                 ps.executeUpdate();
@@ -6578,6 +6649,46 @@ public class Character extends AbstractCharacterObject {
             Server.getInstance().getWorld(world).removeFamily(familyId);
             disbandFamilyFromDB(familyId);
         }
+    }
+
+    public void leaveMarriage() {
+        int partnerid = getPartnerId();
+        if (partnerid <= 0) {
+            return;
+        }
+
+        Ring ownRing = getMarriageRing();
+
+        getWorldServer().deleteRelationship(getId(), partnerid);
+        Ring.removeRing(ownRing);
+
+        Character partner = getWorldServer().getPlayerStorage().getCharacterById(partnerid);
+        if (partner != null) {
+            partner.dissolveMarriageState(getName() + " has dissolved the marriage.");
+        }
+
+        dissolveMarriageState("You have dissolved the marriage with " + Character.getNameById(partnerid) + ".");
+    }
+
+    public void dissolveMarriageState(String message) {
+        Ring ring = getMarriageRing();
+        if (ring != null) {
+            int ringItemId = ring.getItemId();
+            boolean wasEquipped = haveItemEquipped(ringItemId);
+            if (haveItemWithId(ringItemId, true)) {
+                InventoryType invType = wasEquipped ? InventoryType.EQUIPPED : InventoryType.EQUIP;
+                InventoryManipulator.removeById(getClient(), invType, ringItemId, (short) 1, false, false);
+            }
+            if (wasEquipped) {
+                equipChanged();
+            }
+        }
+
+        dropMessage(5, message);
+        sendPacket(WeddingPackets.OnNotifyWeddingPartnerTransfer(0, 0));
+        setPartnerId(-1);
+        setMarriageItemId(-1);
+        addMarriageRing(null);
     }
 
     static void disbandFamilyFromDB(int familyId) {

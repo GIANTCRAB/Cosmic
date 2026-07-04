@@ -174,18 +174,38 @@ public class Pyramid extends PartyQuest {
     /**
      * EXP awarded for a given rank/mode, scaled by the world-configured {@code expRate}, plus the
      * per-hit ({@code kill*(m+1)*2}) and per-cool ({@code cool*(m+1)*10}) bonuses that reward
-     * aggressive play.
+     * aggressive play. On HELL the base gains a per-rank {@code K*characterLevel} term and both
+     * bonuses are multiplied by {@code characterLevel/10} (integer division), tying the payout to
+     * the participant's level; other modes ignore {@code characterLevel}.
      */
-    static int computeExp(byte rank, PyramidMode mode, int kills, int cools, int expRate) {
+    static int computeExp(byte rank, PyramidMode mode, int kills, int cools, int expRate, int characterLevel) {
         int m = mode.getMode();
-        int base = switch (rank) {
-            case 0 -> 60500 + 55000 * m;
-            case 1 -> 55000 + 50000 * m;
-            case 2 -> 46750 + 42500 * m;
-            case 3 -> 22000 + 20000 * m;
-            default -> 0;
-        };
-        return (base + (kills * (m + 1) * 2) + (cools * (m + 1) * 10)) * expRate;
+        int base;
+        int killBonus;
+        int coolBonus;
+        if (mode == PyramidMode.HELL) {
+            int lvlFactor = characterLevel / 10;
+            base = switch (rank) {
+                case 0 -> 60500 + 55000 * m + 1000 * characterLevel;
+                case 1 -> 55000 + 50000 * m + 800 * characterLevel;
+                case 2 -> 46750 + 42500 * m + 500 * characterLevel;
+                case 3 -> 22000 + 20000 * m + 100 * characterLevel;
+                default -> 0;
+            };
+            killBonus = kills * (m + 1) * 2 * lvlFactor;
+            coolBonus = cools * (m + 1) * 10 * lvlFactor;
+        } else {
+            base = switch (rank) {
+                case 0 -> 60500 + 55000 * m;
+                case 1 -> 55000 + 50000 * m;
+                case 2 -> 46750 + 42500 * m;
+                case 3 -> 22000 + 20000 * m;
+                default -> 0;
+            };
+            killBonus = kills * (m + 1) * 2;
+            coolBonus = cools * (m + 1) * 10;
+        }
+        return (base + killBonus + coolBonus) * expRate;
     }
 
     /**
@@ -710,7 +730,7 @@ public class Pyramid extends PartyQuest {
         if (exp == 0) {
             int totalkills = (kill + cool);
             rank = computeRank(stage, totalkills, mode);
-            exp = computeExp(rank, mode, kill, cool, chr.getWorldServer().getExpRate());
+            exp = computeExp(rank, mode, kill, cool, chr.getWorldServer().getExpRate(), chr.getLevel());
         }
         chr.sendPacket(PacketCreator.pyramidScore(rank, exp));
         chr.gainExp(exp, true, true);

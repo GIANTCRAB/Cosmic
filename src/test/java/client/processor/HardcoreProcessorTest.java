@@ -81,6 +81,7 @@ class HardcoreProcessorTest {
         inOrder.verify(chr).flushStorage();           // account storage persisted before deletion
         inOrder.verify(chr).leaveParty();             // detach from party before deletion (prevents ghost member)
         inOrder.verify(chr).leaveFamily();            // detach from family before deletion (prevents ghost entry)
+        inOrder.verify(chr).leaveMarriage();          // dissolve marriage before deletion (prevents dangling partnerId)
         inOrder.verify(chr).deletePermanently();      // character + inventory deleted
         inOrder.verify(chr).markPendingHardcoreDeletion();
         inOrder.verify(client).forceDisconnect();
@@ -96,7 +97,22 @@ class HardcoreProcessorTest {
         var inOrder = inOrder(chr);
         inOrder.verify(chr).leaveParty();
         inOrder.verify(chr).leaveFamily();
+        inOrder.verify(chr).leaveMarriage();
         inOrder.verify(chr).deletePermanently();
+    }
+
+    @Test
+    void enabledModeDetachesFromMarriageBeforeDeletion() {
+        when(chr.getClient()).thenReturn(client);
+        when(chr.deletePermanently()).thenReturn(true);
+
+        HardcoreProcessor.processPermanentDeathIfEnabled(chr);
+
+        var inOrder = inOrder(chr);
+        inOrder.verify(chr).leaveFamily();
+        inOrder.verify(chr).leaveMarriage();
+        inOrder.verify(chr).deletePermanently();
+        verify(chr).leaveMarriage();
     }
 
     @Test

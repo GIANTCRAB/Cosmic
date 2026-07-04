@@ -78,41 +78,93 @@ class PyramidScoreTest {
 
     @Test
     void computeExp_basePerRankAtEasyMode() {
-        assertEquals(60500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 1), "rank S base");
-        assertEquals(55000, Pyramid.computeExp((byte) 1, Pyramid.PyramidMode.EASY, 0, 0, 1), "rank A base");
-        assertEquals(46750, Pyramid.computeExp((byte) 2, Pyramid.PyramidMode.EASY, 0, 0, 1), "rank B base");
-        assertEquals(22000, Pyramid.computeExp((byte) 3, Pyramid.PyramidMode.EASY, 0, 0, 1), "rank C base");
-        assertEquals(0, Pyramid.computeExp((byte) 4, Pyramid.PyramidMode.EASY, 0, 0, 1), "rank D has no base EXP");
+        assertEquals(60500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 1, 0), "rank S base");
+        assertEquals(55000, Pyramid.computeExp((byte) 1, Pyramid.PyramidMode.EASY, 0, 0, 1, 0), "rank A base");
+        assertEquals(46750, Pyramid.computeExp((byte) 2, Pyramid.PyramidMode.EASY, 0, 0, 1, 0), "rank B base");
+        assertEquals(22000, Pyramid.computeExp((byte) 3, Pyramid.PyramidMode.EASY, 0, 0, 1, 0), "rank C base");
+        assertEquals(0, Pyramid.computeExp((byte) 4, Pyramid.PyramidMode.EASY, 0, 0, 1, 0), "rank D has no base EXP");
     }
 
     @Test
     void computeExp_scalesWithDifficultyMode() {
-        // rank S base = 60500 + 55000 * mode
-        assertEquals(60500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 1));
-        assertEquals(115500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.NORMAL, 0, 0, 1));
-        assertEquals(170500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HARD, 0, 0, 1));
-        assertEquals(225500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 0, 0, 1));
+        // rank S base = 60500 + 55000 * mode (HELL base also depends on level; see hell-mode tests)
+        assertEquals(60500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 1, 0));
+        assertEquals(115500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.NORMAL, 0, 0, 1, 0));
+        assertEquals(170500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HARD, 0, 0, 1, 0));
     }
 
     @Test
     void computeExp_includesKillAndCoolBonuses() {
         int base = 60500; // rank S, EASY
-        assertEquals(base + 3000 * 2, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 3000, 0, 1), "kill bonus only");
-        assertEquals(base + 50 * 10, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 50, 1), "cool bonus only");
-        assertEquals(base + 100 * 2 + 10 * 10, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 100, 10, 1), "both bonuses");
+        assertEquals(base + 3000 * 2, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 3000, 0, 1, 0), "kill bonus only");
+        assertEquals(base + 50 * 10, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 50, 1, 0), "cool bonus only");
+        assertEquals(base + 100 * 2 + 10 * 10, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 100, 10, 1, 0), "both bonuses");
     }
 
     @Test
     void computeExp_scalesByWorldExpRate() {
         // rank S, EASY, no kills/cools: base 60500 scaled by expRate
-        assertEquals(121000, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 2));
-        assertEquals(181500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 3));
+        assertEquals(121000, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 2, 0));
+        assertEquals(181500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.EASY, 0, 0, 3, 0));
     }
 
     @Test
     void computeExp_killAndCoolBonusScalesWithMode() {
-        // rank S, 3000 kills, expRate 1: bonus = kills * (m+1) * 2
-        assertEquals(127500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.NORMAL, 3000, 0, 1));
-        assertEquals(249500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 3000, 0, 1));
+        // rank S, 3000 kills, expRate 1: bonus = kills * (m+1) * 2 (HELL kill bonus also scales with level)
+        assertEquals(127500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.NORMAL, 3000, 0, 1, 0));
+    }
+
+    // ----------------------------------------------------------------------
+    // HELL-only: base EXP and kill/cool bonuses scale with characterLevel.
+    // m = 3 (so m+1 = 4); level 120 -> lvlFactor = 120/10 = 12.
+    // base = legacy base + (1000|800|500|100) * characterLevel
+    // killBonus = kills * 4 * 2 * lvlFactor; coolBonus = cools * 4 * 10 * lvlFactor
+    // ----------------------------------------------------------------------
+
+    @Test
+    void computeExp_hellModeBaseIncludesLevelBonus() {
+        int level = 120;
+        // S: 225500 + 1000*120 = 345500
+        assertEquals(345500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 0, 0, 1, level), "rank S base + level");
+        // A: 205000 + 800*120 = 301000
+        assertEquals(301000, Pyramid.computeExp((byte) 1, Pyramid.PyramidMode.HELL, 0, 0, 1, level), "rank A base + level");
+        // B: 174250 + 500*120 = 234250
+        assertEquals(234250, Pyramid.computeExp((byte) 2, Pyramid.PyramidMode.HELL, 0, 0, 1, level), "rank B base + level");
+        // C: 82000 + 100*120 = 94000
+        assertEquals(94000, Pyramid.computeExp((byte) 3, Pyramid.PyramidMode.HELL, 0, 0, 1, level), "rank C base + level");
+        assertEquals(0, Pyramid.computeExp((byte) 4, Pyramid.PyramidMode.HELL, 0, 0, 1, level), "rank D has no base EXP");
+    }
+
+    @Test
+    void computeExp_hellModeKillBonusScalesWithLevel() {
+        // rank S, level 120, 3000 kills: base 345500 + 3000 * 4 * 2 * 12 = 345500 + 288000
+        assertEquals(633500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 3000, 0, 1, 120));
+    }
+
+    @Test
+    void computeExp_hellModeCoolBonusScalesWithLevel() {
+        // rank S, level 120, 50 cools: base 345500 + 50 * 4 * 10 * 12 = 345500 + 24000
+        assertEquals(369500, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 0, 50, 1, 120));
+    }
+
+    @Test
+    void computeExp_hellModeBothBonuses() {
+        // rank S, level 120: base 345500 + 100 * 96 + 10 * 480 = 345500 + 9600 + 4800
+        assertEquals(359900, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 100, 10, 1, 120));
+    }
+
+    @Test
+    void computeExp_hellModeExpRateStillApplies() {
+        // rank S, level 120, expRate 2: (345500) * 2
+        assertEquals(691000, Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 0, 0, 2, 120));
+    }
+
+    @Test
+    void computeExp_hellModeLevelDivisionTruncates() {
+        // kill/cool bonus uses integer division on level: 120 and 125 both yield lvlFactor 12,
+        // so the only delta between them is the base's 1000*level term (5 * 1000).
+        int at120 = Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 1000, 0, 1, 120);
+        int at125 = Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 1000, 0, 1, 125);
+        assertEquals(5 * 1000, at125 - at120, "truncation keeps bonus flat between 120 and 125");
     }
 }
