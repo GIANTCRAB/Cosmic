@@ -87,17 +87,23 @@ function handleEntrance(selection) {
             cm.sendNext("Inside Pharaoh Yeti's Tomb, you can acquire a #e#b#t2022613##k#n by proving yourself capable of defeating the #bPharaoh Jr. Yeti#k, the Pharaoh's clone. Inside that box lies a very special treasure. It is the #e#b#t1132012##k#n.\r\n#i1132012:# #t1132012#\r\n\r\n And if you are somehow able to survive Hell Mode, you will receive the #e#b#t1132013##k#n.\r\n\r\n#i1132013:# #t1132013#\r\n\r\n Though, of course, Nett won't allow that to happen.");
         } else if (selected == 5) {
             var progress = cm.getQuestProgressInt(7760);
-            if (progress >= 50000) {
-                if (cm.canHold(1142142) && !cm.haveItem(1142142)) {
-                    cm.gainItem(1142142, 1);
-                    cm.startQuest(29932);
-                    cm.completeQuest(29932);
-                    cm.sendOk("You have proven yourself a true Protector of Pharaoh. Nett acknowledges your strength and bestows the medal upon you.");
-                } else {
-                    cm.sendOk("Please make room in your EQUIP inventory to receive the <Protector of Pharaoh> Medal.");
-                }
+            if (cm.isQuestCompleted(29932)) {
+                cm.sendOk("You have already earned the <Protector of Pharaoh> Medal. If you have lost it, Dalair can recover it for you.");
             } else {
-                cm.sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b" + progress + "#k / 50000.");
+                if (!cm.isQuestStarted(29932)) {
+                    cm.startQuest(29932);
+                }
+                if (progress >= 50000) {
+                    if (cm.canHold(1142142) && !cm.haveItem(1142142)) {
+                        cm.gainItem(1142142, 1);
+                        cm.completeQuest(29932);
+                        cm.sendOk("You have proven yourself a true Protector of Pharaoh. Nett acknowledges your strength and bestows the medal upon you.");
+                    } else {
+                        cm.sendOk("Please make room in your EQUIP inventory to receive the <Protector of Pharaoh> Medal.");
+                    }
+                } else {
+                    cm.sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b" + progress + "#k / 50000.");
+                }
             }
             cm.dispose();
         }

@@ -715,13 +715,19 @@ public class Pyramid extends PartyQuest {
 
     /**
      * Updates the "Protector of Pharaoh" medal counter for a participant, adding this run's
-     * {@code kill + cool} to info quest {@value #MEDAL_INFO_QUEST}'s progress slot. Reads and
-     * writes the same slot (7760) so it stays consistent with both the {@code #R7760#} client
-     * display and Duarte's progress read; {@code setQuestProgress} announces the infoex update so
-     * the counter refreshes live. Runs on every exit (pass or fail), matching GMS where every
-     * pyramid kill counts toward the goal.
+     * {@code kill + cool} to info quest {@value #MEDAL_INFO_QUEST}'s progress slot. Only accumulates
+     * while quest {@value #MEDAL_QUEST} is {@code STARTED} (the player must accept the medal quest
+     * from Duarte first) -- this is also what makes {@link Character#setQuestProgress} route the
+     * write to the info quest and announce the infoex update, so the {@code #R7760#} client counter
+     * refreshes live. Reads and writes the same slot (7760) and persists via the standard quest
+     * progress save. Runs on every exit (pass or fail), matching GMS where every pyramid kill counts
+     * toward the goal.
      */
     private void updateMedalProgress(Character chr) {
+        QuestStatus medal = chr.getQuest(Quest.getInstance(MEDAL_QUEST));
+        if (medal.getStatus() != QuestStatus.Status.STARTED) {
+            return;
+        }
         String current = chr.getQuest(Quest.getInstance(MEDAL_INFO_QUEST)).getProgress(0);
         chr.setQuestProgress(MEDAL_QUEST, MEDAL_INFO_QUEST, applyMedalRun(current, kill, cool));
     }

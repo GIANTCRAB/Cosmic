@@ -25,19 +25,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Behavioral tests for Duarte's (NPC 2103013) "Protector of Pharaoh" medal grant. Loads the actual
+ * Behavioral tests for Duarte's (NPC 2103013) "Protector of Pharaoh" medal flow. Loads the actual
  * {@code npc/2103013.js} via the GraalJS engine and drives the medal menu option (selection 5) with
  * a mocked {@link NPCConversationManager} ("cm"), asserting that:
  * <ul>
- *   <li>Below 50,000 kills only the running progress is shown -- no item/quest mutation.</li>
- *   <li>At 50,000+ kills (with inventory room and no existing medal) the medal item is granted and
- *       quest 29932 is started + completed, making it recoverable via Dalair.</li>
- *   <li>An already-held medal is never re-granted.</li>
- *   <li>A full EQUIP inventory blocks the grant without charging.</li>
+ *   <li>Selecting the medal option accepts the quest (starts 29932) if it hasn't been started -- the
+ *       counter only accumulates while 29932 is STARTED, so the quest must be accepted first.</li>
+ *   <li>Below 50,000 kills only the running progress is shown -- no item/quest mutation beyond the
+ *       initial start.</li>
+ *   <li>At 50,000+ kills (with inventory room and no existing medal) the medal is granted and quest
+ *       29932 is completed, making it recoverable via Dalair.</li>
+ *   <li>An already-held medal is never re-granted; a full EQUIP inventory blocks the grant.</li>
+ *   <li>An already-completed quest points the player to Dalair for recovery.</li>
  * </ul>
  *
  * <p>The medal counter is read from info quest {@value #MEDAL_INFO_QUEST}'s progress slot (rendered
- * client-side as {@code #R7760#}); granting mirrors Mr. Lim's Pyramid Subway flow (1052115.js).
+ * client-side as {@code #R7760#}); the grant mirrors Mr. Lim's Pyramid Subway flow (1052115.js).
+ *
+ * <p>Note: GraalJS dispatches {@code cm.startQuest(29932)}/{@code cm.completeQuest(29932)} to the
+ * {@code short} overloads, so verifications use {@code (short)} casts to match.
  */
 class DuarteMedalScriptTest {
     private final AbstractScriptManager scriptManager = new AbstractScriptManager() {};
@@ -67,65 +73,94 @@ class DuarteMedalScriptTest {
         iv.invokeFunction("action", (byte) 1, (byte) 0, 5);   // selection 5 = medal menu
     }
 
+    /** Defaults: quest not started, not completed, given progress. Per-test stubs override as needed. */
     private NPCConversationManager baseCm(int progress) {
         NPCConversationManager cm = mock(NPCConversationManager.class);
         when(cm.getMapId()).thenReturn(DUARTE_ENTRANCE_MAP);
         when(cm.getQuestProgressInt(MEDAL_INFO_QUEST)).thenReturn(progress);
+        when(cm.isQuestCompleted(MEDAL_QUEST)).thenReturn(false);
+        when(cm.isQuestStarted(MEDAL_QUEST)).thenReturn(false);
         return cm;
     }
 
     @Test
-    void belowGoal_showsProgressAndNeverGrants() throws Exception {
-        NPCConversationManager cm = baseCm(MEDAL_KILL_GOAL - 1);
+    void notStarted_belowGoal_startsQuestAndShowsProgress() throws Exception {
+        NPCConversationManager cm = baseCm(0);
 
         runMedalOption(cm);
 
-        verify(cm).sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b"
-                + (MEDAL_KILL_GOAL - 1) + "#k / 50000.");
+        verify(cm).startQuest((short) MEDAL_QUEST);
+        verify(cm).sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b0#k / 50000.");
         verify(cm, never()).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
-        verify(cm, never()).startQuest((short) MEDAL_QUEST);
         verify(cm, never()).completeQuest((short) MEDAL_QUEST);
     }
 
     @Test
-    void atGoal_grantsMedalAndCompletesQuest() throws Exception {
+    void started_belowGoal_showsProgressWithoutRestarting() throws Exception {
+        NPCConversationManager cm = baseCm(12345);
+        when(cm.isQuestStarted(MEDAL_QUEST)).thenReturn(true);
+
+        runMedalOption(cm);
+
+        verify(cm, never()).startQuest((short) MEDAL_QUEST);
+        verify(cm).sendOk("The <Protector of Pharaoh> Medal is bestowed only upon those who defeat 50,000 monsters inside Nett's Pyramid. Your current count: #b12345#k / 50000.");
+        verify(cm, never()).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
+        verify(cm, never()).completeQuest((short) MEDAL_QUEST);
+    }
+
+    @Test
+    void started_atGoal_grantsMedalAndCompletesQuest() throws Exception {
         NPCConversationManager cm = baseCm(MEDAL_KILL_GOAL);
+        when(cm.isQuestStarted(MEDAL_QUEST)).thenReturn(true);
         when(cm.canHold(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(true);
         when(cm.haveItem(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(false);
 
         runMedalOption(cm);
 
+        verify(cm, never()).startQuest((short) MEDAL_QUEST);   // already started
         verify(cm).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), eq((short) 1));
-        verify(cm).startQuest((short) MEDAL_QUEST);
         verify(cm).completeQuest((short) MEDAL_QUEST);
         verify(cm).sendOk("You have proven yourself a true Protector of Pharaoh. Nett acknowledges your strength and bestows the medal upon you.");
     }
 
     @Test
-    void atGoal_whenAlreadyHeld_doesNotRegrant() throws Exception {
+    void started_atGoal_whenAlreadyHeld_doesNotRegrant() throws Exception {
         NPCConversationManager cm = baseCm(MEDAL_KILL_GOAL);
+        when(cm.isQuestStarted(MEDAL_QUEST)).thenReturn(true);
         when(cm.canHold(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(true);
         when(cm.haveItem(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(true);
 
         runMedalOption(cm);
 
         verify(cm, never()).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
-        verify(cm, never()).startQuest((short) MEDAL_QUEST);
         verify(cm, never()).completeQuest((short) MEDAL_QUEST);
         verify(cm).sendOk("Please make room in your EQUIP inventory to receive the <Protector of Pharaoh> Medal.");
     }
 
     @Test
-    void atGoal_whenInventoryFull_doesNotGrant() throws Exception {
+    void started_atGoal_whenInventoryFull_doesNotGrant() throws Exception {
         NPCConversationManager cm = baseCm(MEDAL_KILL_GOAL);
+        when(cm.isQuestStarted(MEDAL_QUEST)).thenReturn(true);
         when(cm.canHold(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(false);
         when(cm.haveItem(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(false);
 
         runMedalOption(cm);
 
         verify(cm, never()).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
-        verify(cm, never()).startQuest((short) MEDAL_QUEST);
         verify(cm, never()).completeQuest((short) MEDAL_QUEST);
         verify(cm).sendOk("Please make room in your EQUIP inventory to receive the <Protector of Pharaoh> Medal.");
+    }
+
+    @Test
+    void completed_pointsToDalairForRecovery() throws Exception {
+        NPCConversationManager cm = baseCm(MEDAL_KILL_GOAL);
+        when(cm.isQuestCompleted(MEDAL_QUEST)).thenReturn(true);
+
+        runMedalOption(cm);
+
+        verify(cm, never()).startQuest((short) MEDAL_QUEST);
+        verify(cm, never()).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
+        verify(cm, never()).completeQuest((short) MEDAL_QUEST);
+        verify(cm).sendOk("You have already earned the <Protector of Pharaoh> Medal. If you have lost it, Dalair can recover it for you.");
     }
 }
