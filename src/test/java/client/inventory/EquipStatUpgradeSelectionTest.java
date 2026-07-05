@@ -10,10 +10,12 @@
 package client.inventory;
 
 import org.junit.jupiter.api.Test;
+import tools.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -172,6 +174,95 @@ class EquipStatUpgradeSelectionTest {
             int count = hits.get(s);
             assertTrue(count >= lowerBound && count <= upperBound,
                     "Stat " + s + " count " + count + " outside expected band [" + lowerBound + ", " + upperBound + "]");
+        }
+    }
+
+    @Test
+    void attemptSlotUpgradesDisabledNeverAddsAnything() {
+        // pickUpgradeSlot == false models a non-scrollable equip (e.g. a Medal, tuc == 0):
+        // regardless of vicious, no upgrade-slot/vicious gain must ever be appended.
+        for (int i = 0; i < 500; i++) {
+            List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+            Equip.attemptSlotUpgrades(stats, false, (short) 7);
+            assertTrue(stats.isEmpty(), "Slot upgrade was added while pickUpgradeSlot is disabled");
+        }
+    }
+
+    @Test
+    void attemptSlotUpgradesDisabledIgnoresEvenIncSlotOnly() {
+        // Explicitly assert incSlot/incVicious can never appear when disabled.
+        for (int i = 0; i < 500; i++) {
+            List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+            Equip.attemptSlotUpgrades(stats, false, (short) 0);
+            assertFalse(stats.contains(new Pair<>(Equip.StatUpgrade.incSlot, 1)));
+            assertFalse(stats.contains(new Pair<>(Equip.StatUpgrade.incVicious, 1)));
+        }
+    }
+
+    @Test
+    void attemptSlotUpgradesEnabledCanStillAddSlots() {
+        // Sanity: the enabled path (scrollable equip) must still be able to grant a slot,
+        // so the fix does not silently disable slot gains for regular gear.
+        boolean addedSlot = false;
+        for (int i = 0; i < 5000; i++) {
+            List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+            Equip.attemptSlotUpgrades(stats, true, (short) 0);
+            if (!stats.isEmpty()) {
+                assertEquals(Equip.StatUpgrade.incSlot, stats.get(0).getLeft());
+                addedSlot = true;
+                break;
+            }
+        }
+        assertTrue(addedSlot, "Enabled slot upgrade never fired over many attempts");
+    }
+
+    @Test
+    void ensureStatGainedIsNoOpWhenStatAlreadyPresent() {
+        // When the first roll already produced a stat, the supplier must NOT be called
+        // (no retry needed).
+        List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+        stats.add(new Pair<>(Equip.StatUpgrade.incLUK, 1));
+
+        int[] calls = {0};
+        Equip.ensureStatGained(stats, s -> calls[0]++);
+
+        assertEquals(0, calls[0], "Supplier was called even though a stat was already present");
+        assertEquals(1, stats.size());
+    }
+
+    @Test
+    void ensureStatGainedRetriesUntilStatProduced() {
+        // Models a stat roll that yields 0 a few times before succeeding: the helper
+        // must keep retrying until at least one stat is present.
+        List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+
+        int[] calls = {0};
+        Equip.ensureStatGained(stats, s -> {
+            calls[0]++;
+            if (calls[0] >= 4) {
+                s.add(new Pair<>(Equip.StatUpgrade.incLUK, 1));
+            }
+        });
+
+        assertEquals(4, calls[0], "Helper stopped retrying before a stat was produced");
+        assertEquals(1, stats.size());
+        assertEquals(Equip.StatUpgrade.incLUK, stats.get(0).getLeft());
+    }
+
+    @Test
+    void ensureStatGainedNeverYieldsEmptyForProductiveSupplier() {
+        // Over many runs with a supplier that sometimes produces 0, the result must
+        // always end up non-empty (the always-gain-a-stat guarantee).
+        for (int i = 0; i < 1000; i++) {
+            List<Pair<Equip.StatUpgrade, Integer>> stats = new LinkedList<>();
+            int[] calls = {0};
+            Equip.ensureStatGained(stats, s -> {
+                calls[0]++;
+                if (calls[0] % 3 == 0) {   // produces a stat only every 3rd call
+                    s.add(new Pair<>(Equip.StatUpgrade.incSTR, 1));
+                }
+            });
+            assertFalse(stats.isEmpty(), "ensureStatGained yielded an empty stat list");
         }
     }
 }

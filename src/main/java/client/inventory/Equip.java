@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class Equip extends Item {
     private static final Logger log = LoggerFactory.getLogger(Equip.class);
@@ -66,6 +67,9 @@ public class Equip extends Item {
         StatUpgrade(int value) {
             this.value = value;
         }
+    }
+
+    public record LevelUpOutcome(boolean leveledUp, float resultingExp) {
     }
 
     private byte upgradeSlots;
@@ -350,6 +354,30 @@ public class Equip extends Item {
         }
     }
 
+    static void attemptSlotUpgrades(List<Pair<StatUpgrade, Integer>> stats, boolean pickUpgradeSlot, short vicious) {
+        if (!pickUpgradeSlot) {
+            return;   // non-scrollable equips (e.g. Medals) never gain upgrade slots
+        }
+
+        if (vicious > 0) {
+            getUnitSlotUpgrade(stats, StatUpgrade.incVicious);
+        }
+        getUnitSlotUpgrade(stats, StatUpgrade.incSlot);
+    }
+
+    static void ensureStatGained(List<Pair<StatUpgrade, Integer>> stats,
+                                 Consumer<List<Pair<StatUpgrade, Integer>>> statSupplier) {
+        // Retries the stat supplier until at least one upgrade is present, so a level-up
+        // never yields zero stat gains. Caller must only invoke this when the equip is
+        // stat-upgradeable (the supplier can eventually produce a stat).
+        if (!stats.isEmpty()) {
+            return;
+        }
+        while (stats.isEmpty()) {
+            statSupplier.accept(stats);
+        }
+    }
+
     private void improveDefaultStats(List<Pair<StatUpgrade, Integer>> stats) {
         // When USE_EQUIPMNT_LVLUP_POWER is disabled, only one random stat is upgraded per level up;
         // otherwise every present stat gets a chance to upgrade (powerful mode).
@@ -608,6 +636,9 @@ public class Equip extends Item {
     private void gainLevel(Client c) {
         List<Pair<StatUpgrade, Integer>> stats = new LinkedList<>();
 
+        boolean pickUpgradeSlot = YamlConfig.config.server.USE_EQUIPMNT_LVLUP_SLOTS
+                && ItemInformationProvider.getInstance().canBeScrolled(getItemId());
+
         if (isElemental) {
             List<Pair<String, Integer>> elementalStats = ItemInformationProvider.getInstance().getItemLevelupStats(getItemId(), itemLevel);
 
@@ -619,34 +650,16 @@ public class Equip extends Item {
         }
 
         if (!stats.isEmpty()) {
-            if (YamlConfig.config.server.USE_EQUIPMNT_LVLUP_SLOTS) {
-                if (vicious > 0) {
-                    getUnitSlotUpgrade(stats, StatUpgrade.incVicious);
-                }
-                getUnitSlotUpgrade(stats, StatUpgrade.incSlot);
-            }
+            attemptSlotUpgrades(stats, pickUpgradeSlot, vicious);
         } else {
             isUpgradeable = false;
 
             improveDefaultStats(stats);
-            if (YamlConfig.config.server.USE_EQUIPMNT_LVLUP_SLOTS) {
-                if (vicious > 0) {
-                    getUnitSlotUpgrade(stats, StatUpgrade.incVicious);
-                }
-                getUnitSlotUpgrade(stats, StatUpgrade.incSlot);
+            if (isUpgradeable) {
+                ensureStatGained(stats, this::improveDefaultStats);
             }
 
-            if (isUpgradeable) {
-                while (stats.isEmpty()) {
-                    improveDefaultStats(stats);
-                    if (YamlConfig.config.server.USE_EQUIPMNT_LVLUP_SLOTS) {
-                        if (vicious > 0) {
-                            getUnitSlotUpgrade(stats, StatUpgrade.incVicious);
-                        }
-                        getUnitSlotUpgrade(stats, StatUpgrade.incSlot);
-                    }
-                }
-            }
+            attemptSlotUpgrades(stats, pickUpgradeSlot, vicious);
         }
 
         itemLevel++;
@@ -699,6 +712,13 @@ public class Equip extends Item {
         }
     }
 
+    static LevelUpOutcome resolveExpGainLevelUp(float itemExp, int expNeeded, int itemLevel, int equipMaxLevel) {
+        if (itemLevel >= equipMaxLevel || itemExp < expNeeded) {
+            return new LevelUpOutcome(false, itemExp);
+        }
+        return new LevelUpOutcome(true, 0.0f);   // cap at one level per exp gain, discard overflow
+    }
+
     public synchronized void gainItemExp(Client c, int gain) {  // Ronan's Equip Exp gain method
         ItemInformationProvider ii = ItemInformationProvider.getInstance();
         if (!ii.isUpgradeable(this.getItemId())) {
@@ -725,18 +745,10 @@ public class Equip extends Item {
                     gain, masteryModifier, baseExpGain, itemExp, expNeeded, expNeeded / (baseExpGain / c.getPlayer().getExpRate()));
         }
 
-        if (itemExp >= expNeeded) {
-            while (itemExp >= expNeeded) {
-                itemExp -= expNeeded;
-                gainLevel(c);
-
-                if (itemLevel >= equipMaxLevel) {
-                    itemExp = 0.0f;
-                    break;
-                }
-
-                expNeeded = EquipmentLevelModel.expNeededForTrueLevel(itemLevel);
-            }
+        LevelUpOutcome outcome = resolveExpGainLevelUp(itemExp, expNeeded, itemLevel, equipMaxLevel);
+        itemExp = outcome.resultingExp();
+        if (outcome.leveledUp()) {
+            gainLevel(c);
         }
 
         c.getPlayer().forceUpdateItem(this);

@@ -1734,6 +1734,11 @@ public class ItemInformationProvider {
                 eq.getAvoid() > 0 || eq.getSpeed() > 0 || eq.getJump() > 0 || eq.getHp() > 0 || eq.getMp() > 0);
     }
 
+    public boolean canBeScrolled(int itemId) {
+        Map<String, Integer> stats = getEquipStats(itemId);
+        return stats != null && stats.getOrDefault("tuc", 0) > 0;
+    }
+
     public boolean isUnmerchable(int itemId) {
         if (YamlConfig.config.server.USE_ENFORCE_UNMERCHABLE_CASH && isCash(itemId)) {
             return true;
