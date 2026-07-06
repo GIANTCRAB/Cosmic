@@ -725,7 +725,8 @@ public class Equip extends Item {
             return;
         }
 
-        int equipMaxLevel = Math.max(ii.getEquipLevel(this.getItemId(), true), EquipmentLevelModel.trueMaxLevel());
+        int equipMaxLevel = Math.max(ii.getEquipLevel(this.getItemId(), true),
+                EquipmentLevelModel.trueMaxLevelFor(this.getItemId(), c.getPlayer().getLevel()));
         if (itemLevel >= equipMaxLevel) {
             return;
         }
@@ -755,14 +756,14 @@ public class Equip extends Item {
         //if(YamlConfig.config.server.USE_DEBUG) c.getPlayer().dropMessage("'" + ii.getName(this.getItemId()) + "': " + itemExp + " / " + expNeeded);
     }
 
-    private boolean reachedMaxLevel() {
+    private boolean reachedMaxLevel(int characterLevel) {
         if (isElemental) {
             if (itemLevel < ItemInformationProvider.getInstance().getEquipLevel(getItemId(), true)) {
                 return false;
             }
         }
 
-        return itemLevel >= EquipmentLevelModel.trueMaxLevel();
+        return itemLevel >= EquipmentLevelModel.trueMaxLevelFor(getItemId(), characterLevel);
     }
 
     public String showEquipFeatures(Client c) {
@@ -772,7 +773,7 @@ public class Equip extends Item {
         }
 
         String eqpName = ii.getName(getItemId());
-        String eqpInfo = reachedMaxLevel() ? " #e#rMAX LEVEL#k#n" : (" EXP: #e#b" + (int) itemExp + "#k#n / " + EquipmentLevelModel.expNeededForTrueLevel(itemLevel));
+        String eqpInfo = reachedMaxLevel(c.getPlayer().getLevel()) ? " #e#rMAX LEVEL#k#n" : (" EXP: #e#b" + (int) itemExp + "#k#n / " + EquipmentLevelModel.expNeededForTrueLevel(itemLevel));
 
         return "'" + eqpName + "' -> LV: #e#b" + itemLevel + "#k#n    " + eqpInfo + "\r\n";
     }

@@ -20,15 +20,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EquipmentLevelModelTest {
     private int previousMax;
+    private boolean previousTiered;
 
     @BeforeEach
     void saveConfiguredCeiling() {
         previousMax = YamlConfig.config.server.USE_EQUIPMNT_LVLUP;
+        previousTiered = YamlConfig.config.server.USE_EQUIPMNT_LVLUP_TIERED;
     }
 
     @AfterEach
     void restoreConfiguredCeiling() {
         YamlConfig.config.server.USE_EQUIPMNT_LVLUP = previousMax;
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP_TIERED = previousTiered;
     }
 
     @Test
@@ -108,5 +111,35 @@ class EquipmentLevelModelTest {
         assertEquals(1060, EquipmentLevelModel.expNeededForNetworkLevel(15));
         assertEquals(10000, EquipmentLevelModel.expNeededForNetworkLevel(30));
         assertEquals(10000, EquipmentLevelModel.expNeededForNetworkLevel(31));   // clamped
+    }
+
+    // --- Tiered trueMaxLevelFor (flag toggle against config.yaml's EQUIP_TIERS) -------------
+
+    @Test
+    void trueMaxLevelForFallsBackToFlatCapWhenTieredDisabled() {
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP = 50;
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP_TIERED = false;
+        assertEquals(50, EquipmentLevelModel.trueMaxLevelFor(1302000, 200));   // weapon, any char level
+        assertEquals(50, EquipmentLevelModel.trueMaxLevelFor(1040000, 70));    // chest
+    }
+
+    @Test
+    void trueMaxLevelForAppliesTieredCapWhenEnabled() {
+        // config.yaml carries the spec tiers: weapon@200 -> 105, pants@200 -> 95.
+        YamlConfig.config.server.USE_EQUIPMNT_LVLUP_TIERED = true;
+        assertEquals(105, EquipmentLevelModel.trueMaxLevelFor(1302000, 200));   // weapon tier3
+        assertEquals(95, EquipmentLevelModel.trueMaxLevelFor(1060000, 200));    // pants tier3
+        assertEquals(50, EquipmentLevelModel.trueMaxLevelFor(1302000, 70));     // weapon tier2
+        assertEquals(30, EquipmentLevelModel.trueMaxLevelFor(1302000, 50));     // weapon tier1
+    }
+
+    // --- Network-level regression lock for the "item level capped at 30, XP 0" invariant ----
+
+    @Test
+    void networkLevelRemainsCappedAtThirtyForHighTrueLevels() {
+        // A tiered weapon may reach true level 105; the client must still see 30 with no progress.
+        assertEquals(30, EquipmentLevelModel.networkLevelOf(105));
+        assertTrue(EquipmentLevelModel.isAtNetworkCap(105));
+        assertEquals(10000, EquipmentLevelModel.expNeededForNetworkLevel(105));   // never throws
     }
 }

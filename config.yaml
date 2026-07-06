@@ -406,7 +406,33 @@ server:
     USE_EQUIPMNT_LVLUP_CASH: false   #Enable equip leveling up on cash equipments as well.
     MAX_EQUIPMNT_LVLUP_STAT_UP: 10000   #Max stat upgrade an equipment can have on a levelup.
     MAX_EQUIPMNT_STAT: 32767            #Max stat on an equipment by leveling up.
-    USE_EQUIPMNT_LVLUP: 30               #All equips lvlup at max level of N, set 1 to disable.
+    USE_EQUIPMNT_LVLUP: 30               #All equips lvlup at max level of N, set 1 to disable. Used as the flat cap when USE_EQUIPMNT_LVLUP_TIERED is false.
+    USE_EQUIPMNT_LVLUP_TIERED: true     #When true, per-character-level/per-slot caps defined in EQUIP_TIERS replace the flat USE_EQUIPMNT_LVLUP ceiling.
+    EQUIP_TIERS:                         #Ordered tiers of {maxCharLevel, slots}. The LAST tier is open-ended (applies to all character levels above the previous tier's maxCharLevel; its own maxCharLevel is ignored). Each slot cap is an int (literal) or an arithmetic formula over characterLevel using + - * / and parentheses, e.g. "((characterLevel - 100) / 10 + 1) * 5 + 50". Unspecified slots fall back to "default"; if "default" is also absent the network cap (30) is used.
+      - maxCharLevel: 69                 #Tier 1 (character levels 1..69): every slot capped at 30.
+        slots:
+          chest: 30
+          pants: 30
+          overall: 30
+          weapon: 30
+          shield: 30
+          default: 30
+      - maxCharLevel: 99                 #Tier 2 (character levels 70..99): chest/pants/shield 40, overalls/weapon 50, everything else 30.
+        slots:
+          chest: 35
+          pants: 35
+          overall: 40
+          weapon: 40
+          shield: 35
+          default: 30
+      - maxCharLevel: -1                 #Tier 3 (character level 100+): every 10 character levels adds 5 to chest/pants/overalls/weapon/shield. maxCharLevel is ignored for the final (open-ended) tier.
+        slots:
+          chest: "((characterLevel - 100) / 10 + 1) * 2 + 35"
+          pants: "((characterLevel - 100) / 10 + 1) * 2 + 35"
+          overall: "((characterLevel - 100) / 10 + 1) * 4 + 40"
+          weapon: "((characterLevel - 100) / 10 + 1) * 4 + 40"
+          shield: "((characterLevel - 100) / 10 + 1) * 2 + 35"
+          default: 30
 
     #Map-Chair Configuration
     USE_CHAIR_EXTRAHEAL: false       #Enable map chairs to further recover player's HP and MP (player must have the Chair Mastery skill).

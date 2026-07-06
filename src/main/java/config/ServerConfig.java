@@ -1,6 +1,7 @@
 package config;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ServerConfig {
@@ -255,6 +256,18 @@ public class ServerConfig {
     public int MAX_EQUIPMNT_LVLUP_STAT_UP;
     public int MAX_EQUIPMNT_STAT;
     public int USE_EQUIPMNT_LVLUP;
+    public boolean USE_EQUIPMNT_LVLUP_TIERED;
+    public List<EquipTierYaml> EQUIP_TIERS;
+
+    /**
+     * YAML-binding bean for a single entry of {@link #EQUIP_TIERS}. Each slot value is read as
+     * {@link Object} so both literal ints ({@code chest: 30}) and formula strings
+     * ({@code chest: "characterLevel * 5 + 30"}) survive loading intact.
+     */
+    public static class EquipTierYaml {
+        public int maxCharLevel;
+        public Map<String, Object> slots;
+    }
 
     //Map-Chair Configuration
     public boolean USE_CHAIR_EXTRAHEAL;
