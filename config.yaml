@@ -256,7 +256,7 @@ server:
     USE_BUFF_MOST_SIGNIFICANT: true     #When applying buffs, the player will stick with the highest stat boost among the listed, rather than overwriting stats.
     USE_BUFF_EVERLASTING: false         #Every applied buff on players holds expiration time so high it'd be considered permanent. Suggestion thanks to Vcoc.
     USE_MULTIPLE_SAME_EQUIP_DROP: true  #Enables multiple drops by mobs of the same equipment, number of possible drops based on the quantities provided at the drop data.
-    USE_ENABLE_FULL_RESPAWN: false       #At respawn task, always respawn missing mobs when they're available. Spawn count doesn't depend on how many players are currently there.
+    USE_ENABLE_FULL_RESPAWN: true       #At respawn task, always respawn missing mobs when they're available. Spawn count doesn't depend on how many players are currently there.
     USE_ENABLE_CHAT_LOG: false          #Write in-game chat to log
     USE_MAP_OWNERSHIP_SYSTEM: false      #Flag to enable/disable map ownership system
     USE_FISHING_SYSTEM: false            #Flag to enable/disable custom fishing system
@@ -264,7 +264,7 @@ server:
 
     #Events/PQs Configuration
     USE_OLD_GMS_STYLED_PQ_NPCS: true     #Enables PQ NPCs with similar behaviour to old GMS style, that skips info about the PQs and immediately tries to register the party in.
-    USE_ENABLE_SOLO_EXPEDITIONS: false    #Enables start expeditions with any number of players. This will also bypass all the Zakum prequest.
+    USE_ENABLE_SOLO_EXPEDITIONS: true    #Enables start expeditions with any number of players. This will also bypass all the Zakum prequest.
     USE_ENABLE_DAILY_EXPEDITIONS: false  #Enables daily entry limitations in expeditions.
     USE_ENABLE_RECALL_EVENT: false        #Enables a disconnected player to reaccess the last event instance they were in before logging out. Recall only works if the event isn't cleared or disposed yet. Suggestion thanks to Alisson (Goukken).
 
@@ -290,8 +290,8 @@ server:
     EQUIP_EXP_RATE: 1.0                  #Rate for equipment exp gain, grows linearly. Set 1.0 for default (about 100~200 same-level range mobs killed to pass equip from level 1 to 2).
     PQ_BONUS_EXP_RATE: 0.5               #Rate for the PQ exp reward.
 
-    EXP_SPLIT_LEVEL_INTERVAL: 5            #Non-contributing players must be within N level between the mob to receive EXP.
-    EXP_SPLIT_LEECH_INTERVAL: 5            #Non-contributing players must be within N level between any contributing party member to receive EXP.
+    EXP_SPLIT_LEVEL_INTERVAL: 30            #Non-contributing players must be within N level between the mob to receive EXP.
+    EXP_SPLIT_LEECH_INTERVAL: 30            #Non-contributing players must be within N level between any contributing party member to receive EXP.
     EXP_SPLIT_MVP_MOD: 0.2
     EXP_SPLIT_COMMON_MOD: 0.8
     PARTY_BONUS_EXP_RATE: 2.0            #Rate for the party exp bonus reward.
@@ -427,11 +427,11 @@ server:
           default: 30
       - maxCharLevel: -1                 #Tier 3 (character level 100+): every 10 character levels adds 5 to chest/pants/overalls/weapon/shield. maxCharLevel is ignored for the final (open-ended) tier.
         slots:
-          chest: "((characterLevel - 100) / 10 + 1) * 2 + 35"
-          pants: "((characterLevel - 100) / 10 + 1) * 2 + 35"
-          overall: "((characterLevel - 100) / 10 + 1) * 4 + 40"
-          weapon: "((characterLevel - 100) / 10 + 1) * 4 + 40"
-          shield: "((characterLevel - 100) / 10 + 1) * 2 + 35"
+          chest: "((characterLevel - 100) / 10 + 1) * 4 + 35"
+          pants: "((characterLevel - 100) / 10 + 1) * 4 + 35"
+          overall: "((characterLevel - 100) / 10 + 1) * 8 + 40"
+          weapon: "((characterLevel - 100) / 10 + 1) * 8 + 40"
+          shield: "((characterLevel - 100) / 10 + 1) * 4 + 35"
           default: 30
 
     #Map-Chair Configuration
