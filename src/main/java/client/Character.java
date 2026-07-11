@@ -2301,50 +2301,78 @@ public class Character extends AbstractCharacterObject {
             }
 
             // Clean up marriage data so the surviving partner is not left with a dangling partnerId.
+            // Collect the surviving partners first: dissolving a relationship uses a separate DB
+            // connection, so mutating the marriages table while iterating its ResultSet is unsafe.
+            List<Integer> survivingPartners = new ArrayList<>();
             try (PreparedStatement ps = con.prepareStatement(
-                    "SELECT marriageid, husbandid, wifeid FROM marriages WHERE husbandid = ? OR wifeid = ?")) {
+                     "SELECT marriageid, husbandid, wifeid FROM marriages WHERE husbandid = ? OR wifeid = ?")) {
                 ps.setInt(1, cid);
                 ps.setInt(2, cid);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         int husbandId = rs.getInt("husbandid");
                         int wifeId = rs.getInt("wifeid");
-                        int partnerId = (cid == husbandId) ? wifeId : husbandId;
+                        survivingPartners.add((cid == husbandId) ? wifeId : husbandId);
+                    }
+                }
+            }
 
-                        Character partner = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterById(partnerId);
+            for (int partnerId : survivingPartners) {
+                // Route the dissolution through the World API so the in-memory relationship caches
+                // (World.relationships / relationshipCouples) are evicted together with the DB row.
+                // A stale cache entry otherwise defeats the load-time self-heal (see loadCharFromDB),
+                // leaving the survivor's partnerId dangling and the client offering "Message spouse".
+                World wserv = Server.getInstance().getWorld(world);
+                if (wserv != null) {
+                    wserv.deleteRelationship(cid, partnerId);
+                }
+
+                // Reset the survivor's in-memory state if online. The lookup starts on the deleted
+                // character's world, with an all-worlds fallback so a world mismatch does not leave a
+                // stale in-memory partnerId that would clobber the DB on the next periodic save.
+                Character partner = null;
+                if (wserv != null) {
+                    partner = wserv.getPlayerStorage().getCharacterById(partnerId);
+                }
+                if (partner == null) {
+                    for (World w : Server.getInstance().getWorlds()) {
+                        partner = w.getPlayerStorage().getCharacterById(partnerId);
                         if (partner != null) {
-                            partner.dissolveMarriageState("Your partner has been deleted. The marriage has been dissolved.");
+                            break;
                         }
+                    }
+                }
+                if (partner != null) {
+                    partner.dissolveMarriageState("Your partner has been deleted. The marriage has been dissolved.");
+                }
 
-                        try (PreparedStatement ps2 = con.prepareStatement(
-                                "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
-                            ps2.setInt(1, partnerId);
-                            ps2.executeUpdate();
-                        }
+                try (PreparedStatement ps2 = con.prepareStatement(
+                        "UPDATE characters SET partnerId = -1, marriageItemId = -1 WHERE id = ?")) {
+                    ps2.setInt(1, partnerId);
+                    ps2.executeUpdate();
+                }
 
-                        try (PreparedStatement ps2 = con.prepareStatement(
-                                "SELECT ii.inventoryitemid FROM inventoryitems ii " +
-                                        "INNER JOIN inventoryequipment ie ON ii.inventoryitemid = ie.inventoryitemid " +
-                                        "WHERE ii.characterid = ? AND ii.itemid IN (?, ?, ?, ?)")) {
-                            ps2.setInt(1, partnerId);
-                            ps2.setInt(2, ItemId.WEDDING_RING_MOONSTONE);
-                            ps2.setInt(3, ItemId.WEDDING_RING_STAR);
-                            ps2.setInt(4, ItemId.WEDDING_RING_GOLDEN);
-                            ps2.setInt(5, ItemId.WEDDING_RING_SILVER);
-                            try (ResultSet rs2 = ps2.executeQuery()) {
-                                while (rs2.next()) {
-                                    int inventoryitemid = rs2.getInt("inventoryitemid");
-                                    try (PreparedStatement ps3 = con.prepareStatement(
-                                            "DELETE FROM inventoryequipment WHERE inventoryitemid = ?")) {
-                                        ps3.setInt(1, inventoryitemid);
-                                        ps3.executeUpdate();
-                                    }
-                                    try (PreparedStatement ps3 = con.prepareStatement(
-                                            "DELETE FROM inventoryitems WHERE inventoryitemid = ?")) {
-                                        ps3.setInt(1, inventoryitemid);
-                                        ps3.executeUpdate();
-                                    }
-                                }
+                try (PreparedStatement ps2 = con.prepareStatement(
+                        "SELECT ii.inventoryitemid FROM inventoryitems ii " +
+                                "INNER JOIN inventoryequipment ie ON ii.inventoryitemid = ie.inventoryitemid " +
+                                "WHERE ii.characterid = ? AND ii.itemid IN (?, ?, ?, ?)")) {
+                    ps2.setInt(1, partnerId);
+                    ps2.setInt(2, ItemId.WEDDING_RING_MOONSTONE);
+                    ps2.setInt(3, ItemId.WEDDING_RING_STAR);
+                    ps2.setInt(4, ItemId.WEDDING_RING_GOLDEN);
+                    ps2.setInt(5, ItemId.WEDDING_RING_SILVER);
+                    try (ResultSet rs2 = ps2.executeQuery()) {
+                        while (rs2.next()) {
+                            int inventoryitemid = rs2.getInt("inventoryitemid");
+                            try (PreparedStatement ps3 = con.prepareStatement(
+                                    "DELETE FROM inventoryequipment WHERE inventoryitemid = ?")) {
+                                ps3.setInt(1, inventoryitemid);
+                                ps3.executeUpdate();
+                            }
+                            try (PreparedStatement ps3 = con.prepareStatement(
+                                    "DELETE FROM inventoryitems WHERE inventoryitemid = ?")) {
+                                ps3.setInt(1, inventoryitemid);
+                                ps3.executeUpdate();
                             }
                         }
                     }
@@ -7163,9 +7191,15 @@ public class Character extends AbstractCharacterObject {
 
                     ret.partnerId = rs.getInt("partnerId");
                     ret.marriageItemid = rs.getInt("marriageItemId");
-                    if (ret.marriageItemid > 0 && ret.partnerId <= 0) {
+                    if (ret.partnerId <= 0) {
+                        // Canonical "single" sentinel is -1; normalize any non-positive leftover
+                        // (e.g. a stale 0 from an older cleanup path) so state stays consistent.
+                        ret.partnerId = -1;
                         ret.marriageItemid = -1;
-                    } else if (ret.partnerId > 0 && wserv.getRelationshipId(ret.id) <= 0) {
+                    } else if (wserv.getRelationshipId(ret.id) <= 0) {
+                        // partnerId is set but no live relationship row exists (e.g. the partner was
+                        // deleted). Self-heal to single rather than leaving partnerId dangling, which
+                        // would otherwise keep the client offering "Message spouse".
                         ret.marriageItemid = -1;
                         ret.partnerId = -1;
                     }

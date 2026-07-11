@@ -1017,7 +1017,7 @@ public class Server {
                             try (ResultSet rs2 = ps2.executeQuery()) {
                                 if (rs2.next()) {
                                     try (PreparedStatement ps3 = con.prepareStatement(
-                                            "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
+                                            "UPDATE characters SET partnerId = -1, marriageItemId = -1 WHERE id = ?")) {
                                         ps3.setInt(1, pid);
                                         ps3.executeUpdate();
                                     }
@@ -1044,7 +1044,7 @@ public class Server {
                 while (rs.next()) {
                     int charId = rs.getInt("id");
                     try (PreparedStatement ps2 = con.prepareStatement(
-                            "UPDATE characters SET partnerId = 0, marriageItemId = 0 WHERE id = ?")) {
+                            "UPDATE characters SET partnerId = -1, marriageItemId = -1 WHERE id = ?")) {
                         ps2.setInt(1, charId);
                         ps2.executeUpdate();
                     }

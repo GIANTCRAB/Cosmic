@@ -1,22 +1,35 @@
-﻿# Cosmic
-Cosmic is a server emulator for Global MapleStory (GMS) version 83.
+﻿# Hardcore Cosmic
+Hardcore Cosmic is a server emulator for Global MapleStory (GMS) version 83.
+
+**This is a fork of Cosmic with Hardcore features behind feature flags.**
 
 ## Introduction
 
-Cosmic launched on March 2021. It is based on code from a long line of server emulators spanning over a decade - starting with OdinMS (2008) and ending with HeavenMS (2019).
+Hardcore Cosmic is a fork of Cosmic in June 2026. Cosmic launched on March 2021. It is based on code from a long line of server emulators spanning over a decade - starting with OdinMS (2008) and ending with HeavenMS (2019).
 
 This is mainly a Java based project, but there are also a bunch of scripts written in JavaScript.
 
-Head developer and maintainer: __Ponk__.\
+Head developer and maintainer for Cosmic: __Ponk__.\
 Contributors: a lot of people over the years, and hopefully more to come. Big thanks to everyone who has contributed so far!
 
-Join the Discord server where most of the discussions take place: https://discord.gg/JU5aQapVZK
+Developer for Hardcore Cosmic: __GIANTCRAB__
 
-### Goals
+### Main goal
+
+Hardcore features and feature parity. There are still features missing and we're working on filling the gaps.
+
+#### Things done thus far
+
+- Nett's Pyramid (WIP, rewards still incomplete)
+- Fix for damage reflection and making sure it goes through proper channels such as magic guard, mesos guard, battleship, etc (GMS behaviour)
+- Ensure clean deletion of character when player intentionally deletes character or through hardcore death
+
+### Sub Goals
 What we are working towards.
 * __Vanilla gameplay__ - stay as close to the original game as possible (within reason).
 * __Ease of use__ - getting started should be frictionless and contributing to the project straightforward.
 * __Reduce technical debt__ - making changes should be easy without causing unintended side effects.
+* __Domain driven design refactor__ - code needs to be refactored to express domain design correctly (package private, etc)
 * __Modern tools & technologies__ - stay appealing by continuously improving the code and the project as a whole. 
 
 ### Non-goals
@@ -33,20 +46,6 @@ You may contribute to the project in various ways, mainly through GitHub:
 * Reporting a bug by creating an [Issue](https://github.com/P0nk/Cosmic/issues).
 * Providing information to existing issues or reviewing pull requests that others have made.
 * ...and in other ways that I haven't thought of!
-
-### Continuous integration
-A GitHub Actions pipeline is set up to run the build automatically when a new pull request is opened or commits are pushed to an existing one. This ensures that the code compiles and all the tests pass.
-
-Once a pull request is merged, a tag with the new version is automatically created.
-
-### Discord integration
-Most GitHub activity is pushed to a Discord channel for visibility. This works by leveraging a webhook. The activity includes (but is not limited to): merged commits, created PRs, comments, and new tags.
-
-### Versioning
-The project follows the [semantic versioning](https://semver.org/) scheme using git tags.
-* *Bug fixes* are treated as PATCH: 1.2.__3__ -> 1.2.__4__
-* *General changes or improvements* are treated as MINOR: 1.__2__.3 -> 1.__3.0__
-* *Major changes* are treated as MAJOR: __1__.2.3 -> __2.0.0__
 
 ## Getting started
 Follow along as I go through the steps to play the game on your local computer from start to finish. I won't go into extreme detail, so if you don't have prior experience with Java or git, you might struggle.
