@@ -31,6 +31,7 @@ import client.inventory.Equip;
 import client.inventory.Inventory;
 import client.inventory.InventoryType;
 import client.inventory.Item;
+import client.inventory.ItemStackModel;
 import client.inventory.WeaponType;
 import config.YamlConfig;
 import constants.id.ItemId;
@@ -379,6 +380,7 @@ public class ItemInformationProvider {
             } else {
                 ret = (short) DataTool.getInt(smEntry);
             }
+            ret = (short) ItemStackModel.resolveMaxStack(itemId, ret, ItemStackModel.configFromYaml());
         }
 
         slotMaxCache.put(itemId, ret);

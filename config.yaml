@@ -376,6 +376,10 @@ server:
     ACCOUNT_CATCHUP_FLAT_STAT_PER_TIER: 50   #Flat stat added to each primary stat (STR/DEX/INT/LUK) per tier at full ramp. flatMax = roundHalfUp(highestLevelAchieved / FLAT_TIER_SIZE) * this. Scales with the same gap-ramp as the percent bonus.
     ACCOUNT_CATCHUP_MIN_HIGHEST_LEVEL: 30    #Account highestLevelAchieved must be at least this for the catch-up buff to apply at all. Below it, no character receives the bonus.
 
+    #Item Stack Configuration
+    USE_FORCE_ITEM_STACK_OVERRIDE: true  #When true, ignore the WZ slotMax for stackable items and use MAX_ITEM_STACK_OVERRIDE as the stack ceiling. Equipment, pets, and rechargeables (throwing stars/bullets) are never overridden - forcing them to stack breaks the game.
+    MAX_ITEM_STACK_OVERRIDE: 9999          #Max items per stack when USE_FORCE_ITEM_STACK_OVERRIDE is true. Clamped to [1, 32767] (short) at runtime. Ignored when USE_FORCE_ITEM_STACK_OVERRIDE is false.
+
     #Quest Configuration
     USE_QUEST_RATE: true           #Exp/Meso gained by quests uses fixed server exp/meso rate times quest rate as multiplier, instead of player rates.
     USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT: true  #When true, the max-level cap on normal quests is bypassed (over-levelled characters can still start/complete them). Party-quest entry quests keep their cap regardless, and party-quest event scripts keep their own level gates.

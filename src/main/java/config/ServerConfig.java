@@ -225,6 +225,10 @@ public class ServerConfig {
     public int ACCOUNT_CATCHUP_FLAT_STAT_PER_TIER;
     public int ACCOUNT_CATCHUP_MIN_HIGHEST_LEVEL;
 
+    //Item Stack Configuration
+    public boolean USE_FORCE_ITEM_STACK_OVERRIDE;
+    public int MAX_ITEM_STACK_OVERRIDE;
+
     //Quest Configuration
     public boolean USE_QUEST_RATE;
     public boolean USE_IGNORE_QUEST_MAXLEVEL_REQUIREMENT;
