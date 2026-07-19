@@ -12,7 +12,7 @@ worlds:
     meso_rate: 10
     drop_rate: 10
     boss_drop_rate: 10                      #NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
-    quest_rate: 0.25                           #Multiplier for Exp & Meso gains when completing a quest. Only available when USE_QUEST_RATE is true. Stacks with server Exp & Meso rates.
+    quest_rate: 5.0                           #Multiplier for Exp & Meso gains when completing a quest. Only available when USE_QUEST_RATE is true. Stacks with server Exp & Meso rates.
     fishing_rate: 10                        #Multiplier for success likelihood on meso thrown during fishing.
     travel_rate: 2                         #Means of transportation rides/departs using 1/N of the default time.
 
@@ -172,7 +172,7 @@ server:
     CHANNEL_LOAD: 100                   #Max players per channel (limit actually used to calculate the World server capacity).
     CHANNEL_LOCKS: 20                   #Total number of structure management locks each channel has.
 
-    RESPAWN_INTERVAL: 500             #10 seconds, 10000.
+    RESPAWN_INTERVAL: 100             #10 seconds, 10000.
     AREA_BOSS_RESPAWN_INTERVAL: 10000  #3 hours, 10800000. Controls how often the area boss task re-checks and (re)spawns area bosses.
     AREA_BOSS_OVERRIDE_WZ_RESPAWN: true   #When true, WZ SpawnPoints for bosses listed in AreaBossRegistry are denied after their initial spawn so AreaBossTask is the sole respawner.
     PURGING_INTERVAL: 300000            #5 minutes, 300000.
@@ -479,9 +479,9 @@ server:
     DOJO_ENERGY_DMG: 20                #Dojo energy gain when recv attack
 
     #Wedding Configuration
-    WEDDING_RESERVATION_DELAY: 3        #Minimum idle slots before processing a wedding reservation.
+    WEDDING_RESERVATION_DELAY: 1        #Minimum idle slots before processing a wedding reservation.
     WEDDING_RESERVATION_TIMEOUT: 10     #Limit time in minutes for the couple to show up before cancelling the wedding reservation.
-    WEDDING_RESERVATION_INTERVAL: 60    #Time between wedding starts in minutes.
+    WEDDING_RESERVATION_INTERVAL: 15    #Time between wedding starts in minutes.
     WEDDING_BLESS_EXP: 30000            #Exp gained per bless count.
     WEDDING_GIFT_LIMIT: 1               #Max number of gifts per person to same wishlist on marriage instances.
     WEDDING_BLESSER_SHOWFX: true    #Pops bubble sprite effect on players blessing the couple. Setting this false shows the blessing effect on the couple instead.
