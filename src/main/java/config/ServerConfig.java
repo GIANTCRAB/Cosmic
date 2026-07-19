@@ -21,6 +21,8 @@ public class ServerConfig {
     public int CHANNEL_LOCKS;
 
     public long RESPAWN_INTERVAL;
+    public long AREA_BOSS_RESPAWN_INTERVAL;
+    public boolean AREA_BOSS_OVERRIDE_WZ_RESPAWN;
     public long PURGING_INTERVAL;
     public long RANKING_INTERVAL;
     public long COUPON_INTERVAL;

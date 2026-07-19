@@ -69,6 +69,8 @@ import server.life.MonsterListener;
 import server.life.NPC;
 import server.life.PlayerNPC;
 import server.life.SpawnPoint;
+import server.life.SpawnOnEntryRegistry;
+import server.life.AreaBossSpawn;
 import server.partyquest.CarnivalFactory;
 import server.partyquest.CarnivalFactory.MCSkill;
 import server.partyquest.GuardianSpawnPoint;
@@ -2341,6 +2343,18 @@ public class MapleMap {
 
             msm.runMapScript(chr.getClient(), "onUserEnter/" + onUserEnter, false);
         }
+
+        // Spawn-on-entry quest bosses (e.g. Astaroth Door family): ensure the boss
+        // is present on map entry. Skips if already on the map. Replaces the
+        // former scripts/map/onUserEnter/67700000X.js scripts. See SpawnOnEntryRegistry.
+        AreaBossSpawn onEntrySpawn = SpawnOnEntryRegistry.getDefault().forMap(mapid);
+        if (onEntrySpawn != null && getMonsterById(onEntrySpawn.mobId()) == null) {
+            Monster onEntryMob = LifeFactory.getMonster(onEntrySpawn.mobId());
+            if (onEntryMob != null) {
+                spawnMonsterOnGroundBelow(onEntryMob, new Point(onEntrySpawn.x(), onEntrySpawn.y()));
+                broadcastMessage(PacketCreator.serverNotice(6, onEntrySpawn.message()));
+            }
+        }
         if (FieldLimit.CANNOTUSEMOUNTS.check(fieldLimit) && chr.getBuffedValue(BuffStat.MONSTER_RIDING) != null) {
             chr.cancelEffectFromBuffStat(BuffStat.MONSTER_RIDING);
             chr.cancelBuffStats(BuffStat.MONSTER_RIDING);
@@ -3014,7 +3028,7 @@ public class MapleMap {
      * @param monster
      * @param mobTime
      */
-    public void addMonsterSpawn(Monster monster, int mobTime, int team) {
+    public SpawnPoint addMonsterSpawn(Monster monster, int mobTime, int team) {
         Point newpos = calcPointBelow(monster.getPosition());
         newpos.y -= 1;
         SpawnPoint sp = new SpawnPoint(monster, newpos, !monster.isMobile(), mobTime, mobInterval, team);
@@ -3022,6 +3036,7 @@ public class MapleMap {
         if (sp.shouldSpawn() || mobTime == -1) {// -1 does not respawn and should not either but force ONE spawn
             spawnMonster(sp.getMonster());
         }
+        return sp;
     }
 
     public void addAllMonsterSpawn(Monster monster, int mobTime, int team) {

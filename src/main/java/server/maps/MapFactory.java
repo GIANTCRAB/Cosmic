@@ -22,6 +22,7 @@
 package server.maps;
 
 import constants.id.MapId;
+import config.YamlConfig;
 import provider.Data;
 import provider.DataProvider;
 import provider.DataProviderFactory;
@@ -29,9 +30,12 @@ import provider.DataTool;
 import provider.wz.WZFiles;
 import scripting.event.EventInstanceManager;
 import server.life.AbstractLoadedLife;
+import server.life.AreaBossRegistry;
 import server.life.LifeFactory;
 import server.life.Monster;
 import server.life.PlayerNPC;
+import server.life.SpawnPoint;
+import server.life.WzBossSpawnOverride;
 import server.partyquest.GuardianSpawnPoint;
 import tools.DatabaseConnection;
 import tools.StringUtil;
@@ -54,6 +58,19 @@ public class MapFactory {
     static {
         nameData = DataProviderFactory.getDataProvider(WZFiles.STRING).getData("Map.img");
         mapSource = DataProviderFactory.getDataProvider(WZFiles.MAP);
+    }
+
+    /**
+     * Lazily-initialized override that decides whether a monster's WZ
+     * SpawnPoint should be denied so that {@code AreaBossTask} becomes its
+     * sole respawner. The holder idiom defers reading
+     * {@link config.ServerConfig#AREA_BOSS_OVERRIDE_WZ_RESPAWN} until the first
+     * map is loaded, by which point the YAML config has been parsed.
+     */
+    private static final class WzBossOverrideHolder {
+        static final WzBossSpawnOverride INSTANCE = new WzBossSpawnOverride(
+                YamlConfig.config.server.AREA_BOSS_OVERRIDE_WZ_RESPAWN,
+                new AreaBossRegistry().overridableWzMobIds());
     }
 
     private static void loadLifeFromWz(MapleMap map, Data mapData) {
@@ -120,7 +137,10 @@ public class MapFactory {
             if (mobTime == -1) { //does not respawn, force spawn once
                 map.spawnMonster(monster);
             } else {
-                map.addMonsterSpawn(monster, mobTime, team);
+                SpawnPoint sp = map.addMonsterSpawn(monster, mobTime, team);
+                if (WzBossOverrideHolder.INSTANCE.shouldDenySpawn(id)) {
+                    sp.setDenySpawn(true);
+                }
             }
 
             //should the map be reseted, use allMonsterSpawn list of monsters to spawn them again

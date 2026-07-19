@@ -51,6 +51,7 @@ import net.server.guild.Alliance;
 import net.server.guild.Guild;
 import net.server.guild.GuildCharacter;
 import net.server.task.BossLogTask;
+import net.server.task.AreaBossTask;
 import net.server.task.CharacterDiseaseTask;
 import net.server.task.CouponTask;
 import net.server.task.DueyFredrickTask;
@@ -1124,6 +1125,7 @@ public class Server {
         tMan.register(new DueyFredrickTask(channelDependencies.fredrickProcessor()), HOURS.toMillis(1), timeLeft);
         tMan.register(new InvitationTask(), SECONDS.toMillis(30), SECONDS.toMillis(30));
         tMan.register(new RespawnTask(), YamlConfig.config.server.RESPAWN_INTERVAL, YamlConfig.config.server.RESPAWN_INTERVAL);
+        tMan.register(new AreaBossTask(), YamlConfig.config.server.AREA_BOSS_RESPAWN_INTERVAL, YamlConfig.config.server.AREA_BOSS_RESPAWN_INTERVAL);
 
         timeLeft = getTimeLeftForNextDay();
         ExpeditionBossLog.resetBossLogTable();
