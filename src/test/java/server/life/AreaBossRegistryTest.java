@@ -110,6 +110,53 @@ class AreaBossRegistryTest {
     }
 
     @Test
+    void reactorTriggeredWeakenBossesAreLinkedToTheirReactor() {
+        // The 11 reactor-triggered weaken spawns carry the reactor id whose
+        // completion removes the boss's invulnerability, so AreaBossTask can
+        // revive it alongside the boss. Pinned to catch accidental detachment.
+        List<AreaBossSpawn> spawns = registry.spawns();
+        // Riche / Lich (tombstone reactors)
+        assertTrue(containsReactor(spawns, 211041100, 6090000, 2119000), "Riche 211041100 -> reactor 2119000");
+        assertTrue(containsReactor(spawns, 211041200, 6090000, 2119001), "Riche 211041200 -> reactor 2119001");
+        assertTrue(containsReactor(spawns, 211041300, 6090000, 2119002), "Riche 211041300 -> reactor 2119002");
+        assertTrue(containsReactor(spawns, 211041400, 6090000, 2119003), "Riche 211041400 -> reactor 2119003");
+        // Snow Witch (altar reactors)
+        assertTrue(containsReactor(spawns, 211010000, 6090001, 2119004), "Snow Witch 211010000 -> reactor 2119004");
+        assertTrue(containsReactor(spawns, 211020000, 6090001, 2119005), "Snow Witch 211020000 -> reactor 2119005");
+        assertTrue(containsReactor(spawns, 211050000, 6090001, 2119006), "Snow Witch 211050000 -> reactor 2119006");
+        // Scholar Ghost
+        assertTrue(containsReactor(spawns, 222010300, 6090003, 2229009), "Scholar Ghost -> reactor 2229009");
+        // Rurumo (poison reactors, reactorTime=0)
+        assertTrue(containsReactor(spawns, 261020200, 6090004, 2619003), "Rurumo 261020200 -> reactor 2619003");
+        assertTrue(containsReactor(spawns, 261020400, 6090004, 2619004), "Rurumo 261020400 -> reactor 2619004");
+        assertTrue(containsReactor(spawns, 261020600, 6090004, 2619005), "Rurumo 261020600 -> reactor 2619005");
+    }
+
+    @Test
+    void npcTriggeredAndNonWeakenBossesHaveNoReactorLinked() {
+        // Shade, Security Camera, Deet and Roi are NPC-triggered (the NPC
+        // persists on the map, no respawn cycle). Master Dummy has no weaken
+        // script at all. The other boss families never had a reactor. All of
+        // these must keep reactorId empty so AreaBossTask doesn't try to
+        // revive a non-existent reactor.
+        for (AreaBossSpawn s : registry.spawns()) {
+            if (isReactorTriggeredWeakenBoss(s)) {
+                continue;
+            }
+            assertFalse(s.reactorId().isPresent(),
+                    "spawn should not be linked to a reactor: " + s);
+        }
+    }
+
+    private static boolean isReactorTriggeredWeakenBoss(AreaBossSpawn s) {
+        int mob = s.mobId();
+        return mob == 6090000  // Riche
+                || mob == 6090001  // Snow Witch
+                || mob == 6090003  // Scholar Ghost
+                || mob == 6090004; // Rurumo
+    }
+
+    @Test
     void knownRegionalBossesArePresent() {
         List<AreaBossSpawn> spawns = registry.spawns();
         assertTrue(contains(spawns, 800020130, 9400014), "Black Crow should be registered");
@@ -223,6 +270,15 @@ class AreaBossRegistryTest {
         for (AreaBossSpawn s : spawns) {
             if (s.mapId() == mapId && s.mobId() == mobId) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsReactor(List<AreaBossSpawn> spawns, int mapId, int mobId, int reactorId) {
+        for (AreaBossSpawn s : spawns) {
+            if (s.mapId() == mapId && s.mobId() == mobId) {
+                return s.reactorId().isPresent() && s.reactorId().getAsInt() == reactorId;
             }
         }
         return false;

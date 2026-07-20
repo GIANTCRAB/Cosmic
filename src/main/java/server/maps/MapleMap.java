@@ -1583,6 +1583,43 @@ public class MapleMap {
         }
     }
 
+    /**
+     * Resets every reactor on this map with the given template id that is
+     * currently <em>not</em> alive (i.e. destroyed and, if its
+     * {@code reactorTime &gt; 0}, waiting on its delayed respawn). Alive
+     * reactors are skipped so players mid-mechanic are not disrupted.
+     *
+     * <p>Used by {@code AreaBossTask} to revive the altar/tombstone reactor
+     * tied to a weaken-family boss (e.g. Snow Witch) when the boss itself is
+     * re-spawned, so the boss doesn't come back invulnerable with no way to
+     * trigger the mechanic again until the reactor's full {@code reactorTime}
+     * elapses.
+     *
+     * <p>Delegates to {@link #resetReactors(List)} so both delayed-respawn and
+     * single-use ({@code reactorTime == 0}) reactors are handled correctly.
+     */
+    public void resetDeadReactorsById(int reactorId) {
+        List<Reactor> list = new ArrayList<>();
+
+        objectRLock.lock();
+        try {
+            for (MapObject o : mapobjects.values()) {
+                if (o.getType() == MapObjectType.REACTOR) {
+                    Reactor r = (Reactor) o;
+                    if (r.getId() == reactorId && !r.isAlive()) {
+                        list.add(r);
+                    }
+                }
+            }
+        } finally {
+            objectRLock.unlock();
+        }
+
+        if (!list.isEmpty()) {
+            resetReactors(list);
+        }
+    }
+
     public void shuffleReactors() {
         List<Point> points = new ArrayList<>();
         objectRLock.lock();

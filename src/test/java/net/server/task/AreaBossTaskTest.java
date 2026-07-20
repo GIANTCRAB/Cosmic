@@ -45,6 +45,9 @@ class AreaBossTaskTest {
     private static final AreaBossSpawn TEST_SPAWN =
             new AreaBossSpawn(104000400, 2220000, 279, -496, "A cool breeze was felt when Mano appeared.");
 
+    private static final AreaBossSpawn TEST_SPAWN_WITH_REACTOR =
+            AreaBossSpawn.of(211010000, 6090001, 1375, -215, "Snow Witch has appeared.", 2119004);
+
     @Test
     void shouldSpawnReturnsTrueWhenBossAbsentFromMap() {
         MapleMap map = mock(MapleMap.class);
@@ -86,6 +89,50 @@ class AreaBossTaskTest {
 
         verify(map).spawnMonsterOnGroundBelow(any(Monster.class), any(Point.class));
         verify(map).broadcastMessage(any());
+    }
+
+    @Test
+    void runRevivesLinkedReactorWhenSpawningWeakenBoss() {
+        MapleMap map = mock(MapleMap.class);
+        when(map.getMonsterById(TEST_SPAWN_WITH_REACTOR.mobId())).thenReturn(null);
+        Channel ch = channelFor(TEST_SPAWN_WITH_REACTOR.mapId(), map);
+
+        AreaBossRegistry registry = singleEntryRegistry(TEST_SPAWN_WITH_REACTOR);
+
+        try (MockedStatic<Server> server = mockStatic(Server.class);
+             MockedStatic<LifeFactory> lifeFactory = mockStatic(LifeFactory.class)) {
+            server.when(Server::getInstance).thenReturn(mock(Server.class));
+            when(Server.getInstance().getAllChannels()).thenReturn(List.of(ch));
+            Monster mob = mock(Monster.class);
+            lifeFactory.when(() -> LifeFactory.getMonster(TEST_SPAWN_WITH_REACTOR.mobId())).thenReturn(mob);
+
+            new AreaBossTask(registry).run();
+        }
+
+        // Spawn happens + the linked reactor id is forwarded to the map for revival.
+        verify(map).spawnMonsterOnGroundBelow(any(Monster.class), any(Point.class));
+        verify(map).resetDeadReactorsById(2119004);
+    }
+
+    @Test
+    void runDoesNotTouchReactorsWhenSpawnHasNoReactorLinked() {
+        MapleMap map = mock(MapleMap.class);
+        when(map.getMonsterById(TEST_SPAWN.mobId())).thenReturn(null);
+        Channel ch = channelFor(TEST_SPAWN.mapId(), map);
+
+        AreaBossRegistry registry = singleEntryRegistry(TEST_SPAWN);
+
+        try (MockedStatic<Server> server = mockStatic(Server.class);
+             MockedStatic<LifeFactory> lifeFactory = mockStatic(LifeFactory.class)) {
+            server.when(Server::getInstance).thenReturn(mock(Server.class));
+            when(Server.getInstance().getAllChannels()).thenReturn(List.of(ch));
+            Monster mob = mock(Monster.class);
+            lifeFactory.when(() -> LifeFactory.getMonster(TEST_SPAWN.mobId())).thenReturn(mob);
+
+            new AreaBossTask(registry).run();
+        }
+
+        verify(map, never()).resetDeadReactorsById(anyInt());
     }
 
     @Test

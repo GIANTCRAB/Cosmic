@@ -78,5 +78,9 @@ public class AreaBossTask implements Runnable {
         }
         map.spawnMonsterOnGroundBelow(mob, new Point(spawn.x(), spawn.y()));
         map.broadcastMessage(PacketCreator.serverNotice(6, spawn.message()));
+        // For weaken-family bosses, also revive any linked reactor that is
+        // currently dead so players can re-trigger the weaken mechanic. Skips
+        // itself when no reactor is linked or all linked reactors are alive.
+        spawn.reactorId().ifPresent(map::resetDeadReactorsById);
     }
 }

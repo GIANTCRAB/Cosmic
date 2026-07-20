@@ -11,9 +11,13 @@ package server.life;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.OptionalInt;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AreaBossSpawnTest {
 
@@ -29,6 +33,37 @@ class AreaBossSpawnTest {
     }
 
     @Test
+    void fiveArgConstructorDefaultsReactorIdToEmpty() {
+        AreaBossSpawn s = new AreaBossSpawn(104000400, 2220000, 279, -496, "Mano");
+
+        assertFalse(s.reactorId().isPresent());
+    }
+
+    @Test
+    void ofFactorySetsReactorId() {
+        AreaBossSpawn s = AreaBossSpawn.of(211010000, 6090001, 1375, -215, "Snow Witch has appeared.", 2119004);
+
+        assertEquals(211010000, s.mapId());
+        assertEquals(6090001, s.mobId());
+        assertTrue(s.reactorId().isPresent());
+        assertEquals(2119004, s.reactorId().getAsInt());
+    }
+
+    @Test
+    void canonicalConstructorAcceptsExplicitEmptyReactorId() {
+        AreaBossSpawn s = new AreaBossSpawn(104000400, 2220000, 279, -496, "Mano", OptionalInt.empty());
+
+        assertFalse(s.reactorId().isPresent());
+    }
+
+    @Test
+    void canonicalConstructorAcceptsExplicitReactorId() {
+        AreaBossSpawn s = new AreaBossSpawn(211010000, 6090001, 1375, -215, "Snow Witch", OptionalInt.of(2119004));
+
+        assertEquals(2119004, s.reactorId().getAsInt());
+    }
+
+    @Test
     void equalsAndHashCodeFollowRecordSemantics() {
         AreaBossSpawn a = new AreaBossSpawn(104000400, 2220000, 279, -496, "Mano");
         AreaBossSpawn b = new AreaBossSpawn(104000400, 2220000, 279, -496, "Mano");
@@ -37,6 +72,14 @@ class AreaBossSpawnTest {
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
         assertNotEquals(a, c);
+    }
+
+    @Test
+    void spawnsDifferingOnlyByReactorIdAreNotEqual() {
+        AreaBossSpawn without = new AreaBossSpawn(211010000, 6090001, 1375, -215, "Snow Witch");
+        AreaBossSpawn with = AreaBossSpawn.of(211010000, 6090001, 1375, -215, "Snow Witch", 2119004);
+
+        assertNotEquals(without, with);
     }
 
     @Test
@@ -61,6 +104,18 @@ class AreaBossSpawnTest {
     void rejectsNullMessage() {
         assertThrows(IllegalArgumentException.class,
                 () -> new AreaBossSpawn(104000400, 2220000, 279, -496, null));
+    }
+
+    @Test
+    void rejectsNullReactorId() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new AreaBossSpawn(104000400, 2220000, 279, -496, "Mano", null));
+    }
+
+    @Test
+    void rejectsNonPositiveReactorIdWhenPresent() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AreaBossSpawn.of(211010000, 6090001, 1375, -215, "Snow Witch", 0));
     }
 
     @Test
