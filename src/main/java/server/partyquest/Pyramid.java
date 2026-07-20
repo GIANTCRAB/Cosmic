@@ -133,6 +133,22 @@ public class Pyramid extends PartyQuest {
     }
 
     /**
+     * The difficulty mode this run was started under. Exposed so the Duarte NPC script can pick the
+     * matching gem reward after a successful clear.
+     */
+    public PyramidMode getMode() {
+        return mode;
+    }
+
+    /**
+     * Whether the participant cleared all five stages (a "pass"), as opposed to being warped out
+     * early by gauge depletion (a "fail"). Only a pass routes to the post-test reward map.
+     */
+    public boolean isCleared() {
+        return stage >= 5;
+    }
+
+    /**
      * Per-second gauge drain. The base drain scales with difficulty; in a party ({@code partySize > 1})
      * the drain additionally increases by the party size, so a full party depletes the gauge much
      * faster. Solo ({@code partySize <= 1}) uses the base drain only.
@@ -206,6 +222,21 @@ public class Pyramid extends PartyQuest {
             coolBonus = cools * (m + 1) * 10;
         }
         return (base + killBonus + coolBonus) * expRate;
+    }
+
+    /**
+     * The Pharaoh Yeti gem item awarded for clearing this mode -- the entry key to Pharaoh Yeti's
+     * Tomb. Each difficulty maps to its own named gem (Sapphire/Ruby/Emerald/Topaz for
+     * EASY/NORMAL/HARD/HELL). Switching on the enum (rather than ordinal arithmetic) keeps the
+     * mapping explicit and makes the compiler verify every case is covered.
+     */
+    static int gemForMode(PyramidMode mode) {
+        return switch (mode) {
+            case EASY -> ItemId.PHARAOH_YETI_SAPPHIRE;
+            case NORMAL -> ItemId.PHARAOH_YETI_RUBY;
+            case HARD -> ItemId.PHARAOH_YETI_EMERALD;
+            case HELL -> ItemId.PHARAOH_YETI_TOPAZ;
+        };
     }
 
     /**
@@ -445,6 +476,35 @@ public class Pyramid extends PartyQuest {
             for (Character chr : getParticipants()) {
                 cancelPyramidBuffs(chr);
                 chr.changeMap(MapId.NETTS_PYRAMID, 0);
+            }
+            if (oldMap != null) {
+                oldMap.dispose();
+            }
+        }
+    }
+
+    /**
+     * Mid-run forfeit (e.g. a participant talked to the Duarte NPC inside a stage map): cancel all
+     * run tasks, warp every participant back to the Pyramid Dunes entrance, clear each one's
+     * Pyramid reference, and dispose the disposable map. Unlike {@link #warpOut()}, this does NOT
+     * route to the result map (no score screen / no EXP) and clears the per-player PQ reference
+     * eagerly, since there is no result script to do it later. Unlike {@link #dispose()}, this warps
+     * every participant out instead of leaving the caller to route them.
+     *
+     * <p>Acquires {@link #lifecycleLock}, so it is safe against a concurrent {@code advanceStage} /
+     * {@code warpOut} timer firing: whichever side loses the lock sees {@code map == null} and no-ops.
+     */
+    public void abort(int entranceMapId) {
+        synchronized (lifecycleLock) {
+            if (map == null) {
+                return;
+            }
+            cancelRunTasks();
+            MapleMap oldMap = this.map;
+            this.map = null;
+            for (Character chr : getParticipants()) {
+                chr.changeMap(entranceMapId, 0);
+                chr.setPartyQuest(null);
             }
             if (oldMap != null) {
                 oldMap.dispose();

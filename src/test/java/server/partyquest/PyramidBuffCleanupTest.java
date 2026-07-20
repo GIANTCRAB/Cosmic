@@ -33,7 +33,8 @@ import static org.mockito.Mockito.when;
  * shared BERSERK/BOOSTER buff stats). They are granted during a run by {@link Pyramid#checkBuffs}
  * and must be dropped when the run ends -- via {@link Pyramid#warpOut} / {@link Pyramid#dispose} and
  * via {@link Pyramid#onParticipantDetach} (fired from {@code setPartyQuest(null)}, which is the path
- * the NPC-forfeit and result scripts take) -- but kept while advancing between stages.
+ * the NPC-forfeit/abort and NPC reward-handling scripts take) -- but kept while advancing between
+ * stages.
  *
  * <p>Removal is asserted on {@link Character#cancelBuffStats(BuffStat)}: the sourceid-keyed
  * {@code cancelEffect(itemId)} path does not reliably clear this shared-stat buff at runtime, so the
@@ -87,8 +88,11 @@ class PyramidBuffCleanupTest {
 
     @Test
     void onParticipantDetachDropsPyramidBuffStats() {
-        // The NPC-forfeit (2103013.js) and result (Massacre_result.js) scripts finalize the run with
+        // The NPC-forfeit path (2103013.js -> py.abort) and the NPC reward handlers
+        // (handleResult on failure, handlePostTest after giving the gem) finalize the run with
         // setPartyQuest(null), which fires this hook -- so the buff is cancelled on those paths too.
+        // (Massacre_result.js previously cleared the PQ here too, but no longer does so the mode
+        // survives for the NPC to pick the correct gem; buffs are already stripped by warpOut.)
         Character a = participantOn(PYRAMID_MAP, 1);
         py = newPyramid(List.of(a));
 

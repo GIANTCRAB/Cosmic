@@ -34,15 +34,27 @@ var GEMS = [4001322, 4001323, 4001324, 4001325];
 
 function start() {
     status = -1;
-    var text = "You should NOT talk to this NPC in this map.";
-    if (cm.getMapId() == 926020001) {
-        text = "Stop! You've successfully passed Nett's test. By Nett's grace, you will now be given the opportunity to enter Pharaoh Yeti's Tomb. Do you wish to enter it now?\r\n\r\n#b#L0# Yes, I will go now.#l\r\n#L1# No, I will go later.#l";
-    } else if (cm.getMapId() == 926010000) {
+    var mapId = cm.getMapId();
+    if (mapId == 926010001) {
+        // Result map after warpOut. Route based on whether the participant cleared all 5 stages.
+        var py = cm.getPyramid();
+        if (py != null && py.isCleared()) {
+            cm.sendNext("You have withstood Nett's wrath and proven yourself worthy! Come with me to receive your reward.");
+        } else {
+            cm.sendOk("You were unable to withstand Nett's wrath this time. Train harder and try again.");
+        }
+        return;
+    }
+    if (mapId == 926020001) {
+        cm.sendNext("Stop! You've successfully passed Nett's test. By Nett's grace, I will grant you Pharaoh Yeti's Gem. You may use it anytime to enter Pharaoh Yeti's Tomb. Check that you have at least 1 empty slot in your Etc window.");
+        return;
+    }
+    var text;
+    if (mapId == 926010000) {
         text = "I am Duarte.\r\n\r\n#b#L0# Ask about the Pyramid.#l\r\n#e#L1# Enter the Pyramid.#l#n\r\n\r\n#L2# Find a Party.#l\r\n\r\n#L3# Enter Pharaoh Yeti's Tomb.#l\r\n#L4# Ask about Pharaoh Yeti's treasures.#l\r\n#L5# Receive the <Protector of Pharaoh> Medal.#l";
     } else {
         text = "Do you want to forfeit the challenge and leave?\r\n\r\n#b#L0# Leave#l";
     }
-
     cm.sendSimple(text);
 }
 
@@ -56,14 +68,25 @@ function action(mode, type, selection) {
         status++;
     }
 
-    if (cm.getMapId() == 926010000) {
+    var mapId = cm.getMapId();
+    if (mapId == 926010000) {
         handleEntrance(selection);
-    } else if (cm.getMapId() == 926020001) {
-        handlePostTest(selection);
+    } else if (mapId == 926010001) {
+        handleResult();
+    } else if (mapId == 926020001) {
+        handlePostTest();
     } else {
-        // Mid-run forfeit -> boot back to the entrance and clear the PQ state.
-        cm.warp(926010000);
-        cm.getPlayer().setPartyQuest(null);
+        // Mid-run forfeit -> abort the whole run: warp ALL participants to the entrance, cancel the
+        // Pyramid's timers (gauge/stage/respawn), and dispose the stage map. If we only warped the
+        // talker, the still-running stage timer would later re-warp everyone (incl. the talker, who
+        // is still in py.getParticipants()) back into a pyramid stage.
+        var py = cm.getPyramid();
+        if (py != null) {
+            py.abort(926010000);
+        } else {
+            cm.warp(926010000);
+            cm.getPlayer().setPartyQuest(null);
+        }
         cm.dispose();
     }
 }
@@ -164,21 +187,29 @@ function validateEntry(modeSelection) {
             var m = members.get(i);
             if (m != null && m.getMapId() == 926010000) {
                 present++;
+                if (m.getLevel() < 40) {
+                    cm.sendOk("All party members on this map must be Lv. 40+ to enter this PQ.");
+                    return false;
+                }
+                if (modeSelection == 3 && m.getLevel() < 60) {
+                    cm.sendOk("All party members on this map must be Lv. 60+ for Hell mode.");
+                    return false;
+                }
             }
         }
         if (present < 2) {
             cm.sendOk("Make sure that 2 or more party members are in your map.");
             return false;
         }
-    }
-
-    if (cm.getPlayer().getLevel() < 40) {
-        cm.sendOk("You must be Lv. 40+ to enter this PQ.");
-        return false;
-    }
-    if (modeSelection == 3 && cm.getPlayer().getLevel() < 60) {
-        cm.sendOk("Only Hell mode is available for players that are over Lv. 60.");
-        return false;
+    } else {
+        if (cm.getPlayer().getLevel() < 40) {
+            cm.sendOk("You must be Lv. 40+ to enter this PQ.");
+            return false;
+        }
+        if (modeSelection == 3 && cm.getPlayer().getLevel() < 60) {
+            cm.sendOk("Only Hell mode is available for players that are over Lv. 60.");
+            return false;
+        }
     }
 
     if (modeSelection == 1) {
@@ -193,21 +224,40 @@ function validateEntry(modeSelection) {
     return true;
 }
 
-function handlePostTest(selection) {
+function handleResult() {
+    // Result map (926010001): reached via warpOut after either a full clear or gauge depletion.
+    // The Massacre_result onUserEnter script already ran sendScore (EXP). Here we route the player
+    // onward WITHOUT clearing the Pyramid reference -- handlePostTest needs it to read the mode for
+    // the correct gem. On failure we clear it since no reward is due.
     if (status == 0) {
-        if (selection == 0) {
-            cm.dispose();
-        } else if (selection == 1) {
-            cm.sendNext("I will give you Pharaoh Yeti's Gem. You will be able to enter Pharaoh Yeti's Tomb anytime with this Gem. Check to see if you have at least 1 empty slot in your Etc window.");
+        var py = cm.getPyramid();
+        if (py != null && py.isCleared()) {
+            cm.warp(926020001, 0);
+        } else {
+            cm.warp(926010000, 0);
+            if (py != null) {
+                cm.getPlayer().setPartyQuest(null);
+            }
         }
-    } else if (status == 1) {
-        var itemid = 4001325;
+    }
+    cm.dispose();
+}
+
+function handlePostTest() {
+    if (status == 0) {
+        var py = cm.getPyramid();
+        var itemid = (py != null) ? GEMS[py.getMode().getMode()] : 4001325;
         if (cm.canHold(itemid)) {
             cm.gainItem(itemid);
-            cm.warp(926010000);
+            cm.warp(926010000, 0);
+            if (py != null) {
+                cm.getPlayer().setPartyQuest(null);
+            }
+            cm.dispose();
         } else {
-            cm.showInfoText("You must have at least 1 empty slot in your Etc window to receive the reward.");
+            cm.sendOk("You must have at least 1 empty slot in your Etc window to receive the reward. Please make room and talk to me again.");
         }
+    } else {
         cm.dispose();
     }
 }

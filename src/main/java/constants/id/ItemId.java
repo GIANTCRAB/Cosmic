@@ -179,6 +179,13 @@ public class ItemId {
     public static final int PHARAOHS_BLESSING_3 = 2022587;
     public static final int PHARAOHS_BLESSING_4 = 2022588;
 
+    // Nett's Pyramid completion reward gems (entry keys to Pharaoh Yeti's Tomb).
+    // One per difficulty mode, ordered to match PyramidMode ordinals (EASY=0..HELL=3).
+    public static final int PHARAOH_YETI_SAPPHIRE = 4001322;
+    public static final int PHARAOH_YETI_RUBY = 4001323;
+    public static final int PHARAOH_YETI_EMERALD = 4001324;
+    public static final int PHARAOH_YETI_TOPAZ = 4001325;
+
     // Evolve pet
     public static final int DRAGON_PET = 5000028;
     public static final int ROBO_PET = 5000047;

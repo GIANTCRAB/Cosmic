@@ -9,6 +9,7 @@
  */
 package server.partyquest;
 
+import constants.id.ItemId;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -166,5 +167,17 @@ class PyramidScoreTest {
         int at120 = Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 1000, 0, 1, 120);
         int at125 = Pyramid.computeExp((byte) 0, Pyramid.PyramidMode.HELL, 1000, 0, 1, 125);
         assertEquals(5 * 1000, at125 - at120, "truncation keeps bonus flat between 120 and 125");
+    }
+
+    // ----------------------------------------------------------------------
+    // Gem reward: one Pharaoh Yeti gem per difficulty mode (the tomb entry key).
+    // ----------------------------------------------------------------------
+
+    @Test
+    void gemForMode_returnsMatchingGemPerDifficulty() {
+        assertEquals(ItemId.PHARAOH_YETI_SAPPHIRE, Pyramid.gemForMode(Pyramid.PyramidMode.EASY), "EASY -> Sapphire");
+        assertEquals(ItemId.PHARAOH_YETI_RUBY, Pyramid.gemForMode(Pyramid.PyramidMode.NORMAL), "NORMAL -> Ruby");
+        assertEquals(ItemId.PHARAOH_YETI_EMERALD, Pyramid.gemForMode(Pyramid.PyramidMode.HARD), "HARD -> Emerald");
+        assertEquals(ItemId.PHARAOH_YETI_TOPAZ, Pyramid.gemForMode(Pyramid.PyramidMode.HELL), "HELL -> Topaz");
     }
 }
