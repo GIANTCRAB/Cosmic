@@ -63,6 +63,7 @@ import server.partyquest.MonsterCarnival;
 import server.partyquest.Pyramid;
 import server.partyquest.Pyramid.PyramidMode;
 import server.partyquest.PharaohTomb;
+import server.reward.VendingMachineRewards;
 import tools.PacketCreator;
 import tools.packets.WeddingPackets;
 
@@ -96,6 +97,26 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
         }
 
         return talk;
+    }
+
+    public int vendingTier(int[] tickets, int coins) {
+        return VendingMachineRewards.tierFor(tickets, coins);
+    }
+
+    public VendingMachineRewards.RewardEntry vendingRoll(int tier) {
+        return VendingMachineRewards.roll(tier);
+    }
+
+    public List<VendingMachineRewards.RewardEntry> vendingRewardEntries(int tier) {
+        return VendingMachineRewards.entries(tier);
+    }
+
+    public String vendingTierLabel(int tier) {
+        return VendingMachineRewards.label(tier);
+    }
+
+    public int vendingTierCount() {
+        return VendingMachineRewards.tierCount();
     }
 
     public NPCConversationManager(Client c, int npc, String scriptName) {

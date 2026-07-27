@@ -26,6 +26,7 @@ import client.Character.DelayedQuestUpdate;
 import client.*;
 import client.inventory.*;
 import client.inventory.manipulator.InventoryManipulator;
+import client.processor.InventoryExchangeProcessor;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.id.ItemId;
@@ -667,6 +668,10 @@ public class AbstractPlayerInteraction {
         }
 
         return item;
+    }
+
+    public boolean exchangeItems(int[] removeIds, int[] removeQtys, int[] addIds, int[] addQtys) {
+        return InventoryExchangeProcessor.exchange(this, removeIds, removeQtys, addIds, addQtys);
     }
 
     public void gainFame(int delta) {
