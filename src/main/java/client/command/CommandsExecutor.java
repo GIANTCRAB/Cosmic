@@ -47,6 +47,7 @@ import client.command.commands.gm0.StatIntCommand;
 import client.command.commands.gm0.StatLukCommand;
 import client.command.commands.gm0.StatStrCommand;
 import client.command.commands.gm0.TimeCommand;
+import client.command.commands.gm0.ToggleCatchupCommand;
 import client.command.commands.gm0.ToggleExpCommand;
 import client.command.commands.gm0.UptimeCommand;
 import client.command.commands.gm1.BossHpCommand;
@@ -364,6 +365,7 @@ public class CommandsExecutor {
         addCommand("luk", StatLukCommand.class);
         addCommand("enableauth", EnableAuthCommand.class);
         addCommand("toggleexp", ToggleExpCommand.class);
+        addCommand("togglecatchup", ToggleCatchupCommand.class);
         addCommand("mylawn", MapOwnerClaimCommand.class);
         addCommand("bosshp", BossHpCommand.class);
         addCommand("mobhp", MobHpCommand.class);

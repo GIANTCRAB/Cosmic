@@ -7916,7 +7916,9 @@ public class Character extends AbstractCharacterObject {
     }
 
     private int getCatchupBonusPercent() {
-        if (!YamlConfig.config.server.USE_ACCOUNT_LEVEL_CATCHUP_BUFF || client == null) {
+        if (!YamlConfig.config.server.USE_ACCOUNT_LEVEL_CATCHUP_BUFF
+                || client == null
+                || !MetaProgressionToggle.isEnabled(getId())) {
             return 0;
         }
         int highest = client.getHighestLevelAchieved();
