@@ -42,8 +42,8 @@ Explicitly excluded from the scope of the project.
 
 ### Contribute
 You may contribute to the project in various ways, mainly through GitHub:
-* Providing improvements to the code through a [Pull Request](https://github.com/P0nk/Cosmic/pulls) from your own fork. 
-* Reporting a bug by creating an [Issue](https://github.com/P0nk/Cosmic/issues).
+* Providing improvements to the code through a [Pull Request](https://github.com/GIANTCRAB/Cosmic/pulls) from your own fork. 
+* Reporting a bug by creating an [Issue](https://github.com/GIANTCRAB/Cosmic/issues).
 * Providing information to existing issues or reviewing pull requests that others have made.
 * ...and in other ways that I haven't thought of!
 

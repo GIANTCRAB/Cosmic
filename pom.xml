@@ -7,38 +7,34 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Cosmic</name>
+    <name>Cosmic Hardcore</name>
     <description>Server emulator for Global MapleStory version 83</description>
-    <url>https://github.com/P0nk/Cosmic</url>
-    <inceptionYear>2021</inceptionYear>
+    <url>https://github.com/GIANTCRAB/Cosmic</url>
+    <inceptionYear>2026</inceptionYear>
 
     <developers>
         <developer>
-            <name>Ponk</name>
-            <email>ponkcode@gmail.com</email>
-            <url>https://github.com/P0nk</url>
+            <name>Huiren</name>
+            <url>https://github.com/GIANTCRAB</url>
             <roles>
                 <role>maintainer</role>
                 <role>developer</role>
             </roles>
-            <properties>
-                <discord>ponkcode</discord>
-            </properties>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/P0nk/Cosmic.git</connection>
-        <developerConnection>scm:git:https://github.com/P0nk/Cosmic.git</developerConnection>
-        <url>https://github.com/P0nk/Cosmic</url>
+        <connection>scm:git:https://github.com/GIANTCRAB/Cosmic.git</connection>
+        <developerConnection>scm:git:https://github.com/GIANTCRAB/Cosmic.git</developerConnection>
+        <url>https://github.com/GIANTCRAB/Cosmic</url>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/P0nk/Cosmic/issues</url>
+        <url>https://github.com/GIANTCRAB/Cosmic/issues</url>
     </issueManagement>
     <ciManagement>
         <system>GitHub Actions</system>
-        <url>https://github.com/P0nk/Cosmic/actions</url>
+        <url>https://github.com/GIANTCRAB/Cosmic/actions</url>
     </ciManagement>
 
     <properties>
