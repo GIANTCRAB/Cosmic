@@ -130,6 +130,7 @@ public class Storage {
     }
 
     public void saveToDB(Connection con) {
+        lock.lock();
         try {
             try (PreparedStatement ps = con.prepareStatement("UPDATE storages SET slots = ?, meso = ? WHERE storageid = ?")) {
                 ps.setInt(1, slots);
@@ -139,7 +140,7 @@ public class Storage {
             }
             List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
 
-            List<Item> list = getItems();
+            List<Item> list = new ArrayList<>(items);
             for (Item item : list) {
                 itemsWithType.add(new Pair<>(item, item.getInventoryType()));
             }
@@ -147,6 +148,8 @@ public class Storage {
             ItemFactory.STORAGE.saveItems(itemsWithType, id, con);
         } catch (SQLException ex) {
             ex.printStackTrace();
+        } finally {
+            lock.unlock();
         }
     }
 

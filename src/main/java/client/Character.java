@@ -238,7 +238,7 @@ public class Character extends AbstractCharacterObject {
     private int linkedLevel = 0;
     private String linkedName = null;
     private boolean finishedDojoTutorial;
-    private boolean usedStorage = false;
+    private volatile boolean usedStorage = false;
     private boolean pendingHardcoreDeletion = false;
     private String name;
     private String chalktext;
@@ -318,6 +318,11 @@ public class Character extends AbstractCharacterObject {
     private final Lock petLock = new ReentrantLock(true);
     private final Lock prtLock = new ReentrantLock();
     private final Lock cpnLock = new ReentrantLock();
+    // Coordinates storage<->inventory transfers with saveCharToDB so a save cannot
+    // observe a half-applied transfer (torn snapshot). Lock ordering rule:
+    //   Client.lock -> transferLock -> Inventory.lock -> Storage.lock
+    // Save path acquires only transferLock, so there is no deadlock path with packet handlers.
+    private final Lock transferLock = new ReentrantLock(true);
     private final Map<Integer, Set<Integer>> excluded = new LinkedHashMap<>();
     private final Set<Integer> excludedItems = new LinkedHashSet<>();
     private final Set<Integer> disabledPartySearchInvites = new LinkedHashSet<>();
@@ -5167,8 +5172,13 @@ public class Character extends AbstractCharacterObject {
                 con.setAutoCommit(false);
                 con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
                 try {
-                    storage.saveToDB(con);
-                    usedStorage = false;
+                    lockTransfer();
+                    try {
+                        storage.saveToDB(con);
+                        usedStorage = false;
+                    } finally {
+                        unlockTransfer();
+                    }
                     con.commit();
                 } catch (Exception e) {
                     con.rollback();
@@ -5181,6 +5191,19 @@ public class Character extends AbstractCharacterObject {
                 log.error("Error saving storage for chr {}", name, e);
             }
         }
+    }
+
+    /**
+     * Acquires the transfer lock. Held by storage transfer operations and by
+     * {@link #saveCharToDB(boolean)} while snapshotting inventory + storage so
+     * that the persisted state can never reflect a half-applied transfer.
+     */
+    public void lockTransfer() {
+        transferLock.lock();
+    }
+
+    public void unlockTransfer() {
+        transferLock.unlock();
     }
 
     public boolean deletePermanently() {
@@ -8760,15 +8783,27 @@ public class Character extends AbstractCharacterObject {
                     psMacro.executeBatch();
                 }
 
-                List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
-                for (Inventory iv : inventory) {
-                    for (Item item : iv.list()) {
-                        itemsWithType.add(new Pair<>(item, iv.getType()));
+                lockTransfer();
+                try {
+                    List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
+                    for (Inventory iv : inventory) {
+                        Collection<Item> snapshot = new ArrayList<>(iv.list());
+                        for (Item item : snapshot) {
+                            itemsWithType.add(new Pair<>(item, iv.getType()));
+                        }
                     }
-                }
 
-                // Items
-                ItemFactory.INVENTORY.saveItems(itemsWithType, id, con);
+                    // Items
+                    ItemFactory.INVENTORY.saveItems(itemsWithType, id, con);
+
+                    // Storage (kept adjacent to inventory save so the transferLock window is short)
+                    if (storage != null && usedStorage) {
+                        storage.saveToDB(con);
+                        usedStorage = false;
+                    }
+                } finally {
+                    unlockTransfer();
+                }
 
                 // Skills
                 try (PreparedStatement psSkill = con.prepareStatement("REPLACE INTO skills (characterid, skillid, skilllevel, masterlevel, expiration) VALUES (?, ?, ?, ?, ?)")) {
@@ -8927,11 +8962,6 @@ public class Character extends AbstractCharacterObject {
 
                 if (cashshop != null) {
                     cashshop.save(con);
-                }
-
-                if (storage != null && usedStorage) {
-                    storage.saveToDB(con);
-                    usedStorage = false;
                 }
 
                 con.commit();
