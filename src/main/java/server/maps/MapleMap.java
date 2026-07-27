@@ -737,6 +737,25 @@ public class MapleMap {
         return d;
     }
 
+    /**
+     * Resolves the per-monster drop list, honouring a {@link Monster#getDropOverride() per-instance
+     * override} before falling back to the DB-backed table. The fallback path mirrors the legacy
+     * behaviour: when {@code USE_SPAWN_RELEVANT_LOOT} is on the monster consults the loot manager
+     * (aggro-aware), otherwise the provider's cached {@code drop_data} list is used. Extracted as a
+     * pure-over-the-monster helper so the override-first ordering is unit-testable without standing
+     * up a full {@link MapleMap}.
+     */
+    static List<MonsterDropEntry> resolveLootEntry(Monster mob, boolean useSpawnRelevantLoot) {
+        List<MonsterDropEntry> override = mob.getDropOverride();
+        if (override != null) {
+            return override;
+        }
+        if (useSpawnRelevantLoot) {
+            return mob.retrieveRelevantDrops();
+        }
+        return MonsterInformationProvider.getInstance().retrieveEffectiveDrop(mob.getId());
+    }
+
     private void dropFromMonster(final Character chr, final Monster mob, final boolean useBaseRate, short delay) {
         if (mob.dropsDisabled() || !dropsOn) {
             return;
@@ -763,7 +782,7 @@ public class MapleMap {
         final List<MonsterDropEntry> visibleQuestEntry = new ArrayList<>();
         final List<MonsterDropEntry> otherQuestEntry = new ArrayList<>();
 
-        List<MonsterDropEntry> lootEntry = YamlConfig.config.server.USE_SPAWN_RELEVANT_LOOT ? mob.retrieveRelevantDrops() : mi.retrieveEffectiveDrop(mob.getId());
+        List<MonsterDropEntry> lootEntry = resolveLootEntry(mob, YamlConfig.config.server.USE_SPAWN_RELEVANT_LOOT);
         sortDropEntries(lootEntry, dropEntry, visibleQuestEntry, otherQuestEntry, chr);     // thanks Articuno, Limit, Rohenn for noticing quest loots not showing up in only-quest item drops scenario
 
         if (lootEntry.isEmpty()) {   // thanks resinate

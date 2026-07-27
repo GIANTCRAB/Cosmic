@@ -29,7 +29,6 @@ var selected = -1;
 var party = 0;          // 0 = solo, 1 = party
 var mode = "EASY";
 
-var TOMB_MAP = 926010010;            // Tomb of Pharaoh Yeti
 var GEMS = [4001322, 4001323, 4001324, 4001325];
 
 function start() {
@@ -140,7 +139,9 @@ function handleEntrance(selection) {
             var gem = GEMS[selection];
             if (gem != null && cm.haveItem(gem)) {
                 cm.gainItem(gem, -1);
-                cm.warp(TOMB_MAP);
+                // selection (0..3) is the gem ordinal, which matches the PyramidMode ordinal the player
+                // cleared to earn that gem -- so it drives which treasure chest the tomb's Jr. Yeti drops.
+                cm.enterPharaohTomb(selection);
             } else {
                 cm.sendOk("You'll need a Pharaoh Yeti's Gem to enter Pharaoh Yeti's Tomb. Are you sure you have one?");
             }

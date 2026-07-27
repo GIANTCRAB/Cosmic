@@ -1667,24 +1667,9 @@ public class ItemInformationProvider {
         if (rewardCache.containsKey(itemId)) {
             return rewardCache.get(itemId);
         }
-        int totalprob = 0;
-        List<RewardItem> rewards = new ArrayList<>();
-        for (Data child : getItemData(itemId).getChildByPath("reward").getChildren()) {
-            RewardItem reward = new RewardItem();
-            reward.itemid = DataTool.getInt("item", child, 0);
-            reward.prob = (byte) DataTool.getInt("prob", child, 0);
-            reward.quantity = (short) DataTool.getInt("count", child, 0);
-            reward.effect = DataTool.getString("Effect", child, "");
-            reward.worldmsg = DataTool.getString("worldMsg", child, null);
-            reward.period = DataTool.getInt("period", child, -1);
-
-            totalprob += reward.prob;
-
-            rewards.add(reward);
-        }
-        Pair<Integer, List<RewardItem>> hmm = new Pair<>(totalprob, rewards);
-        rewardCache.put(itemId, hmm);
-        return hmm;
+        Pair<Integer, List<RewardItem>> result = RewardTableParser.parse(getItemData(itemId).getChildByPath("reward"));
+        rewardCache.put(itemId, result);
+        return result;
     }
 
     public boolean isConsumeOnPickup(int itemId) {
@@ -2320,7 +2305,8 @@ public class ItemInformationProvider {
     public static final class RewardItem {
 
         public int itemid, period;
-        public short prob, quantity;
+        public int prob;
+        public short quantity;
         public String effect, worldmsg;
     }
 

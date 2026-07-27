@@ -108,6 +108,11 @@ public class MobId {
     public static final int TRANSPARENT_PHARAOH_YETI = 9700022;
     public static final int TRANSPARENT_PHARAOH_YETI_SPAWN = 9700023;
 
+    // Nett's Pyramid - the 1-HP "Pharaoh's clone" that appears inside Pharaoh Yeti's Tomb and drops
+    // a mode-specific Pharaoh's Treasure Chest on death. Distinct from the transparent-yeti family
+    // above: it is trivially killable and does not revive.
+    public static final int PHARAOH_JR_YETI = 9700019;
+
     public static boolean isPyramidYeti(int mobId) {
         return mobId == PHARAOH_YETI
                 || mobId == TRANSPARENT_PHARAOH_YETI

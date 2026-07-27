@@ -72,9 +72,9 @@ public final class ItemRewardHandler extends AbstractPacketHandler {
                 }
                 InventoryManipulator.removeById(c, InventoryType.USE, itemId, 1, false, false);
                 if (reward.worldmsg != null) {
-                    String msg = reward.worldmsg;
-                    msg.replaceAll("/name", c.getPlayer().getName());
-                    msg.replaceAll("/item", ii.getName(reward.itemid));
+                    String msg = reward.worldmsg
+                            .replace("/name", c.getPlayer().getName())
+                            .replace("/item", ii.getName(reward.itemid));
                     Server.getInstance().broadcastMessage(c.getWorld(), PacketCreator.serverNotice(6, msg));
                 }
                 break;

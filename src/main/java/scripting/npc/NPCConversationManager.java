@@ -55,7 +55,6 @@ import server.gachapon.Gachapon;
 import server.gachapon.Gachapon.GachaponItem;
 import server.life.LifeFactory;
 import server.life.PlayerNPC;
-import server.maps.MapManager;
 import server.maps.MapObject;
 import server.maps.MapObjectType;
 import server.maps.MapleMap;
@@ -63,6 +62,7 @@ import server.partyquest.AriantColiseum;
 import server.partyquest.MonsterCarnival;
 import server.partyquest.Pyramid;
 import server.partyquest.Pyramid.PyramidMode;
+import server.partyquest.PharaohTomb;
 import tools.PacketCreator;
 import tools.packets.WeddingPackets;
 
@@ -530,6 +530,21 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
         dispose();              // close the NPC conversation before warping
         py.startEntry(map);     // force-warp participants into the disposable map; run starts on readiness
         return true;
+    }
+
+    /**
+     * Enter Pharaoh Yeti's Tomb by spending a gem, the way Duarte (2103013) routes a player who picked
+     * "Enter Pharaoh Yeti's Tomb". The gem the player spent is the non-forgeable proof of which
+     * difficulty they cleared, so its ordinal (0=EASY Sapphire .. 3=HELL Topaz) drives the chest the
+     * tomb's Jr. Yeti will drop. Mints a fresh disposable tomb map per call (two players spending gems
+     * never share a room), mirroring {@link #createPyramid}.
+     *
+     * @param modeOrdinal 0..3 matching {@link PyramidMode} ordinals and the gem order in Duarte's menu
+     */
+    public void enterPharaohTomb(int modeOrdinal) {
+        PyramidMode mode = PyramidMode.values()[modeOrdinal];
+        dispose();              // close the NPC conversation before warping
+        new PharaohTomb(getPlayer(), c.getChannelServer(), mode).enter();
     }
 
     public boolean itemExists(int itemid) {

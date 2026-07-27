@@ -227,6 +227,7 @@ public class MapId {
     // Nett's pyramid
     public static final int NETTS_PYRAMID_ENTRANCE = 926010000;
     public static final int NETTS_PYRAMID = 926010001;
+    public static final int TOMB_OF_PHARAOH_YETI = 926010010;
     public static final int NETTS_PYRAMID_SOLO_BASE = 926010100;
     public static final int NETTS_PYRAMID_PARTY_BASE = 926020100;
     private static final int NETTS_PYRAMID_MIN = NETTS_PYRAMID_SOLO_BASE;

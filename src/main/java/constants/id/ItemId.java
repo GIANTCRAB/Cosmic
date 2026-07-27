@@ -186,6 +186,13 @@ public class ItemId {
     public static final int PHARAOH_YETI_EMERALD = 4001324;
     public static final int PHARAOH_YETI_TOPAZ = 4001325;
 
+    // Pharaoh's Treasure Chest (use-item with a WZ reward table). The chest dropped by the
+    // Pharaoh Jr. Yeti inside the Tomb is mode-specific: only HELL grants the upgraded chest, whose
+    // reward table is the sole source of the Immortal Pharaoh Belt (1132013). All other difficulties
+    // drop the standard chest, which can only yield the Pharaoh Belt (1132012).
+    public static final int PHARAOHS_TREASURE_CHEST = 2022613;
+    public static final int PHARAOHS_TREASURE_CHEST_HELL = 2022618;
+
     // Evolve pet
     public static final int DRAGON_PET = 5000028;
     public static final int ROBO_PET = 5000047;

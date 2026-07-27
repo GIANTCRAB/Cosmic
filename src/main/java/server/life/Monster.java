@@ -118,6 +118,15 @@ public class Monster extends AbstractLoadedLife {
     private Runnable removeAfterAction = null;
     private boolean availablePuppetUpdate = true;
 
+    /**
+     * Per-instance drop-list override. When non-null, this list is used verbatim on death instead of
+     * the mob's DB-backed {@code drop_data}. Enables special-case, mode-specific drops that cannot be
+     * expressed in the shared {@code drop_data} table -- e.g. the Pharaoh Jr. Yeti inside the Tomb of
+     * Pharaoh Yeti dropping the difficulty-matched Pharaoh's Treasure Chest. Null for every ordinary
+     * mob, so the default path is unchanged.
+     */
+    private List<MonsterDropEntry> dropOverride = null;
+
     private final Lock externalLock = new ReentrantLock();
     private final Lock monsterLock = new ReentrantLock(true);
     private final Lock statiLock = new ReentrantLock();
@@ -767,6 +776,24 @@ public class Monster extends AbstractLoadedLife {
         }
 
         return LootManager.retrieveRelevantDrops(this.getId(), lootChars);
+    }
+
+    /**
+     * The per-instance drop-list override set by {@link #setDropOverride}, or {@code null} when the
+     * mob should fall back to its DB-backed {@code drop_data} table. Consulted first by
+     * {@link MapleMap#dropFromMonster} so a non-null override fully determines the loot.
+     */
+    public List<MonsterDropEntry> getDropOverride() {
+        return dropOverride;
+    }
+
+    /**
+     * Replaces this mob's death drops with the supplied list (used verbatim, ignoring the DB table
+     * and the global drop tables). Pass {@code null} to restore the default behaviour. The list is
+     * stored by reference; callers must not mutate it after hand-off.
+     */
+    public void setDropOverride(List<MonsterDropEntry> dropOverride) {
+        this.dropOverride = dropOverride;
     }
 
     public Character killBy(final Character killer) {
