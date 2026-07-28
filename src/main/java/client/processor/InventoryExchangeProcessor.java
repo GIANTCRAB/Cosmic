@@ -17,6 +17,7 @@ import constants.inventory.ItemConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scripting.AbstractPlayerInteraction;
+import tools.PacketCreator;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,9 +49,22 @@ public class InventoryExchangeProcessor {
 
         chr.lockTransfer();
         try {
-            return commit(c, removes, adds);
+            boolean committed = commit(c, removes, adds);
+            if (committed) {
+                sendFeedback(c, removes, adds);
+            }
+            return committed;
         } finally {
             chr.unlockTransfer();
+        }
+    }
+
+    private static void sendFeedback(Client c, Map<Integer, Integer> removes, Map<Integer, Integer> adds) {
+        for (Map.Entry<Integer, Integer> e : removes.entrySet()) {
+            c.sendPacket(PacketCreator.getShowItemGain(e.getKey(), (short) (-e.getValue()), true));
+        }
+        for (Map.Entry<Integer, Integer> e : adds.entrySet()) {
+            c.sendPacket(PacketCreator.getShowItemGain(e.getKey(), e.getValue().shortValue(), true));
         }
     }
 

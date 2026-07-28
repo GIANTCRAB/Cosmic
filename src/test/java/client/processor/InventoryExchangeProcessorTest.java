@@ -79,6 +79,7 @@ class InventoryExchangeProcessorTest {
             im.verify(() -> InventoryManipulator.removeById(eq(client), any(), eq(4001009), eq(10), anyBoolean(), anyBoolean()));
             im.verify(() -> InventoryManipulator.removeById(eq(client), any(), eq(4001010), eq(5), anyBoolean(), anyBoolean()));
             im.verify(() -> InventoryManipulator.addById(eq(client), eq(1302058), eq((short) 1)));
+            verify(client, times(3)).sendPacket(any());   // 2 losses + 1 gain
         }
     }
 
@@ -92,6 +93,7 @@ class InventoryExchangeProcessorTest {
         assertFalse(result);
         verify(chr, never()).lockTransfer();
         verify(api, never()).canHoldAllAfterRemoving(anyList(), anyList(), anyList(), anyList());
+        verify(client, never()).sendPacket(any());
     }
 
     @Test
@@ -103,6 +105,7 @@ class InventoryExchangeProcessorTest {
 
         assertFalse(result);
         verify(chr, never()).lockTransfer();
+        verify(client, never()).sendPacket(any());
     }
 
     @Test
@@ -122,6 +125,7 @@ class InventoryExchangeProcessorTest {
             im.verify(() -> InventoryManipulator.addById(eq(client), eq(1302058), anyShort()), never());
             // ...but the first (already-applied) removal is restored by the rollback.
             im.verify(() -> InventoryManipulator.addById(eq(client), eq(4001009), eq((short) 10)));
+            verify(client, never()).sendPacket(any());   // rolled back -> no net change -> no feedback
         }
     }
 
@@ -140,6 +144,7 @@ class InventoryExchangeProcessorTest {
             im.verify(() -> InventoryManipulator.addById(eq(client), eq(1302058), eq((short) 1)));
             // Rollback re-adds the item that was removed before the failed add.
             im.verify(() -> InventoryManipulator.addById(eq(client), eq(4001009), eq((short) 10)));
+            verify(client, never()).sendPacket(any());   // rolled back -> no feedback
         }
     }
 
@@ -156,6 +161,7 @@ class InventoryExchangeProcessorTest {
             verify(api).haveItem(4001009, 10);
             im.verify(() -> InventoryManipulator.removeById(eq(client), any(), eq(4001009), eq(10), anyBoolean(), anyBoolean()));
             im.verify(() -> InventoryManipulator.removeById(eq(client), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean()), times(1));
+            verify(client, times(2)).sendPacket(any());   // 1 aggregated loss + 1 gain
         }
     }
 }
