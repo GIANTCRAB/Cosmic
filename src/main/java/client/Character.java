@@ -5062,6 +5062,18 @@ public class Character extends AbstractCharacterObject {
         return dropRate;
     }
 
+    public boolean hasPhysicalMeleeWeapon() {
+        Item weapon = getInventory(InventoryType.EQUIPPED).getItem((short) -11);
+        if (weapon == null) {
+            return false;
+        }
+        WeaponType wt = ItemInformationProvider.getInstance().getWeaponType(weapon.getItemId());
+        return wt != WeaponType.NOT_A_WEAPON
+                && wt != WeaponType.BOW && wt != WeaponType.CROSSBOW
+                && wt != WeaponType.CLAW && wt != WeaponType.GUN
+                && wt != WeaponType.STAFF && wt != WeaponType.WAND;
+    }
+
     public int getCouponDropRate() {
         return dropCoupon;
     }

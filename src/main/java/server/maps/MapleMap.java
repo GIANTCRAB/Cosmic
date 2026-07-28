@@ -775,6 +775,13 @@ public class MapleMap {
             chRate = 1;
         }
 
+        if (!useBaseRate && !mob.isBoss()
+                && chr.getWorldServer().getMeleeBoostedDropRate() > 1
+                && chr.hasPhysicalMeleeWeapon()
+                && mob.getLevel() <= chr.getLevel() - YamlConfig.config.server.EXP_SPLIT_LEVEL_INTERVAL) {
+            chRate *= chr.getWorldServer().getMeleeBoostedDropRate();
+        }
+
         final MonsterInformationProvider mi = MonsterInformationProvider.getInstance();
         final List<MonsterGlobalDropEntry> globalEntry = new ArrayList<>(mi.getRelevantGlobalDrops(mapid));
 
