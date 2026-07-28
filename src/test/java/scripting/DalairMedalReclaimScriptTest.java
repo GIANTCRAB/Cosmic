@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
  * {@link NPCConversationManager} ("cm") + {@link Character}, asserting that:
  * <ul>
  *   <li>The "View medal rankings" option still shows the existing "unavailable" message.</li>
- *   <li>Recovery charges exactly {@code 1,000,000 * level} mesos and grants every missing medal.</li>
+ *   <li>Recovery charges a fixed 100,000,000 meso fee and grants every missing medal.</li>
  *   <li>Medals already carried (including equipped ones) are skipped, never re-granted.</li>
  *   <li>Insufficient mesos or full inventory aborts without charging the player.</li>
  * </ul>
@@ -124,7 +124,6 @@ class DalairMedalReclaimScriptTest {
         when(chr.getCompletedQuests()).thenReturn(completed);
         when(cm.getMedalItemForQuest(QUEST_BEGINNER_ADVENTURER)).thenReturn(MEDAL_BEGINNER_ADVENTURER);
         when(cm.haveItemWithId(MEDAL_BEGINNER_ADVENTURER, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(50);
         when(cm.getMeso()).thenReturn(1000);
         engine.put("cm", cm);
         Invocable iv = (Invocable) engine;
@@ -148,7 +147,6 @@ class DalairMedalReclaimScriptTest {
         when(chr.getCompletedQuests()).thenReturn(completed);
         when(cm.getMedalItemForQuest(QUEST_BEGINNER_ADVENTURER)).thenReturn(MEDAL_BEGINNER_ADVENTURER);
         when(cm.haveItemWithId(MEDAL_BEGINNER_ADVENTURER, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(10);
         when(cm.getMeso()).thenReturn(100_000_000);
         when(cm.canHold(MEDAL_BEGINNER_ADVENTURER)).thenReturn(false);
         engine.put("cm", cm);
@@ -163,7 +161,7 @@ class DalairMedalReclaimScriptTest {
     }
 
     @Test
-    void recover_grantsMissingMedalsAndChargesLevelBasedFee() throws Exception {
+    void recover_grantsMissingMedalsAndChargesFixedFee() throws Exception {
         ScriptEngine engine = load();
         NPCConversationManager cm = mock(NPCConversationManager.class);
         Character chr = mock(Character.class);
@@ -177,7 +175,6 @@ class DalairMedalReclaimScriptTest {
         when(cm.getMedalItemForQuest(QUEST_OUTSTANDING_CITIZEN)).thenReturn(MEDAL_OUTSTANDING_CITIZEN);
         when(cm.haveItemWithId(MEDAL_BEGINNER_ADVENTURER, true)).thenReturn(false);
         when(cm.haveItemWithId(MEDAL_OUTSTANDING_CITIZEN, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(50);
         when(cm.getMeso()).thenReturn(200_000_000);
         when(cm.canHold(MEDAL_BEGINNER_ADVENTURER)).thenReturn(true);
         when(cm.canHold(MEDAL_OUTSTANDING_CITIZEN)).thenReturn(true);
@@ -188,7 +185,7 @@ class DalairMedalReclaimScriptTest {
         selectOption(iv, 1);
         confirmYes(iv);
 
-        verify(cm).gainMeso(-150_000_000);
+        verify(cm).gainMeso(-100_000_000);
         verify(cm).gainItem(eq(MEDAL_BEGINNER_ADVENTURER), anyShort());
         verify(cm).gainItem(eq(MEDAL_OUTSTANDING_CITIZEN), anyShort());
     }
@@ -207,7 +204,6 @@ class DalairMedalReclaimScriptTest {
         when(chr.getCompletedQuests()).thenReturn(completed);
         when(cm.getMedalItemForQuest(QUEST_PROTECTOR_OF_PHARAOH)).thenReturn(MEDAL_PROTECTOR_OF_PHARAOH);
         when(cm.haveItemWithId(MEDAL_PROTECTOR_OF_PHARAOH, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(40);
         when(cm.getMeso()).thenReturn(200_000_000);
         when(cm.canHold(MEDAL_PROTECTOR_OF_PHARAOH)).thenReturn(true);
         engine.put("cm", cm);
@@ -217,7 +213,7 @@ class DalairMedalReclaimScriptTest {
         selectOption(iv, 1);
         confirmYes(iv);
 
-        verify(cm).gainMeso(-120_000_000);   // 3,000,000 * level 40
+        verify(cm).gainMeso(-100_000_000);
         verify(cm).gainItem(eq(MEDAL_PROTECTOR_OF_PHARAOH), anyShort());
     }
 
@@ -238,7 +234,6 @@ class DalairMedalReclaimScriptTest {
         when(cm.getMedalItemForQuest(QUEST_NON_MEDAL)).thenReturn(-1);
         when(cm.haveItemWithId(MEDAL_BEGINNER_ADVENTURER, true)).thenReturn(true);
         when(cm.haveItemWithId(MEDAL_OUTSTANDING_CITIZEN, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(10);
         when(cm.getMeso()).thenReturn(100_000_000);
         when(cm.canHold(MEDAL_OUTSTANDING_CITIZEN)).thenReturn(true);
         engine.put("cm", cm);
@@ -250,7 +245,7 @@ class DalairMedalReclaimScriptTest {
 
         verify(cm, never()).gainItem(eq(MEDAL_BEGINNER_ADVENTURER), anyShort());
         verify(cm).gainItem(eq(MEDAL_OUTSTANDING_CITIZEN), anyShort());
-        verify(cm).gainMeso(-30_000_000);
+        verify(cm).gainMeso(-100_000_000);
     }
 
     @Test
@@ -264,7 +259,6 @@ class DalairMedalReclaimScriptTest {
         when(chr.getCompletedQuests()).thenReturn(completed);
         when(cm.getMedalItemForQuest(QUEST_BEGINNER_ADVENTURER)).thenReturn(MEDAL_BEGINNER_ADVENTURER);
         when(cm.haveItemWithId(MEDAL_BEGINNER_ADVENTURER, true)).thenReturn(false);
-        when(cm.getLevel()).thenReturn(50);
         when(cm.getMeso()).thenReturn(100_000_000);
         engine.put("cm", cm);
         Invocable iv = (Invocable) engine;

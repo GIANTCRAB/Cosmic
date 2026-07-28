@@ -26,7 +26,7 @@ var selectedType = -1;
 var recoverableMedals = null;
 var totalCost = 0;
 
-var MEDAL_RECOVERY_FEE_PER_LEVEL = 3000000;
+var MEDAL_RECOVERY_FEE = 100000000;
 
 function start() {
     status = -1;
@@ -54,8 +54,8 @@ function action(mode, type, selection) {
                 cm.dispose();
                 return;
             }
-            totalCost = MEDAL_RECOVERY_FEE_PER_LEVEL * cm.getLevel();
-            var msg = "The following medals have been recovered into my records, but you are no longer carrying them. I can restore them to you for a service fee of #e3,000,000 mesos per character level#n.#b\r\n\r\n";
+            totalCost = MEDAL_RECOVERY_FEE;
+            var msg = "The following medals have been recovered into my records, but you are no longer carrying them. I can restore them to you for a service fee of #e100,000,000 mesos#n.#b\r\n\r\n";
             for (var i = 0; i < recoverableMedals.length; i++) {
                 msg += "#v" + recoverableMedals[i] + "# #z" + recoverableMedals[i] + "#\r\n";
             }
