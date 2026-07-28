@@ -258,6 +258,8 @@ public class ServerConfig {
     //Equipment Configuration
     public boolean USE_EQUIPMNT_LVLUP_SLOTS;
     public boolean USE_EQUIPMNT_LVLUP_POWER;
+    public boolean USE_SPECIAL_BOSS_EQUIP_LVLUP_ALL_STATS;
+    public List<Integer> SPECIAL_BOSS_EQUIP_IDS;
     public boolean USE_EQUIPMNT_LVLUP_CASH;
     public int MAX_EQUIPMNT_LVLUP_STAT_UP;
     public int MAX_EQUIPMNT_STAT;

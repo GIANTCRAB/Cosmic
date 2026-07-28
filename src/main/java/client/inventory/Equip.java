@@ -379,10 +379,15 @@ public class Equip extends Item {
     }
 
     private void improveDefaultStats(List<Pair<StatUpgrade, Integer>> stats) {
-        // When USE_EQUIPMNT_LVLUP_POWER is disabled, only one random stat is upgraded per level up;
-        // otherwise every present stat gets a chance to upgrade (powerful mode).
-        List<StatUpgrade> toUpgrade = selectStatsToUpgrade(getUpgradeCandidates(),
-                YamlConfig.config.server.USE_EQUIPMNT_LVLUP_POWER);
+        // Stat selection: every present stat upgrades when POWER mode is on, or when the
+        // special-boss rescue flag rescues a powerful boss drop while POWER is off; otherwise
+        // only one random stat upgrades. Gain size always follows USE_EQUIPMNT_LVLUP_POWER.
+        boolean selectAllStats = decideSelectAllStats(getItemId(),
+                YamlConfig.config.server.USE_EQUIPMNT_LVLUP_POWER,
+                YamlConfig.config.server.USE_SPECIAL_BOSS_EQUIP_LVLUP_ALL_STATS,
+                YamlConfig.config.server.SPECIAL_BOSS_EQUIP_IDS);
+
+        List<StatUpgrade> toUpgrade = selectStatsToUpgrade(getUpgradeCandidates(), selectAllStats);
         for (StatUpgrade name : toUpgrade) {
             getUnitStatUpgrade(stats, name, getCurStatValue(name), isAttributeStat(name));
         }
@@ -451,6 +456,16 @@ public class Equip extends Item {
             return new ArrayList<>(candidates);
         }
         return List.of(candidates.get(Randomizer.rand(0, candidates.size() - 1)));
+    }
+
+    static boolean decideSelectAllStats(int itemId, boolean power, boolean bossAllStats, List<Integer> bossItemIds) {
+        // POWER mode already upgrades all stats (with bigger gains), so it short-circuits.
+        // Otherwise the special-boss rescue flag promotes powerful boss drops to all-stats
+        // (still with the small, non-power gains) when POWER is disabled.
+        if (power) {
+            return true;
+        }
+        return bossAllStats && bossItemIds != null && bossItemIds.contains(itemId);
     }
 
     private int getCurStatValue(StatUpgrade name) {

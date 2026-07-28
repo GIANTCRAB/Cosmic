@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -263,6 +262,55 @@ class EquipStatUpgradeSelectionTest {
                 }
             });
             assertFalse(stats.isEmpty(), "ensureStatGained yielded an empty stat list");
+        }
+    }
+
+    // --- decideSelectAllStats: special-boss rescue while USE_EQUIPMNT_LVLUP_POWER is off -----
+
+    private static final int BAIN_SWORD = 1402062;
+    private static final int ZAKUM_HELMET = 1002357;
+    private static final int REGULAR_WEAPON = 1302000;
+    private static final List<Integer> SPECIAL_BOSS_IDS = List.of(
+            1382068, 1402062, 1442078, 1452071, 1472086, 1492037,
+            1002357, 1002390, 1002430, 1122000, 1002971,
+            1003023, 1003024, 1003025, 1003026);
+
+    @Test
+    void powerModeShortCircuitsToAllStats() {
+        // When POWER is on, every item selects all stats regardless of the boss rescue flag.
+        assertTrue(Equip.decideSelectAllStats(REGULAR_WEAPON, true, false, SPECIAL_BOSS_IDS));
+        assertTrue(Equip.decideSelectAllStats(BAIN_SWORD, true, false, SPECIAL_BOSS_IDS));
+        assertTrue(Equip.decideSelectAllStats(REGULAR_WEAPON, true, true, null));
+    }
+
+    @Test
+    void bossRescueUpgradesAllStatsForBossItemWhenPowerOff() {
+        assertTrue(Equip.decideSelectAllStats(BAIN_SWORD, false, true, SPECIAL_BOSS_IDS));
+        assertTrue(Equip.decideSelectAllStats(ZAKUM_HELMET, false, true, SPECIAL_BOSS_IDS));
+    }
+
+    @Test
+    void bossRescueDoesNotApplyToNonBossItemWhenPowerOff() {
+        assertFalse(Equip.decideSelectAllStats(REGULAR_WEAPON, false, true, SPECIAL_BOSS_IDS));
+    }
+
+    @Test
+    void bossRescueRequiresFlagEvenForBossItemWhenPowerOff() {
+        // The rescue flag must be explicitly enabled; a boss drop alone is not enough.
+        assertFalse(Equip.decideSelectAllStats(BAIN_SWORD, false, false, SPECIAL_BOSS_IDS));
+    }
+
+    @Test
+    void bossRescueIsNullSafeWhenBossListMissing() {
+        assertFalse(Equip.decideSelectAllStats(BAIN_SWORD, false, true, null));
+    }
+
+    @Test
+    void bossRescueWorksWithEverySpecialBossDropId() {
+        // Sanity: every id enumerated in config.yaml must be recognised as a boss drop.
+        for (int itemId : SPECIAL_BOSS_IDS) {
+            assertTrue(Equip.decideSelectAllStats(itemId, false, true, SPECIAL_BOSS_IDS),
+                    "Item " + itemId + " should be a special boss drop");
         }
     }
 }
