@@ -20,6 +20,7 @@ public class MobId {
     public static final int LOW_DARKSTAR = 8500004;
 
     public static final int PIANUS_R = 8510000;
+    public static final int PIANUS_L = 8520000;
     public static final int BLOODY_BOOM = 8510100;
 
     public static final int PINK_BEAN = 8820001;

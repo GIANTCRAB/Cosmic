@@ -9,6 +9,8 @@
  */
 package server.life;
 
+import constants.id.MobId;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,8 +75,8 @@ public record AreaBossRegistry(List<AreaBossSpawn> spawns, Set<Integer> overrida
             // Original 8 WZ bosses
             8180000,  // Manon
             8180001,  // Griffey
-            8510000,  // Pianus (right)
-            8520000,  // Pianus (left)
+            MobId.PIANUS_R,  // Pianus (right)
+            MobId.PIANUS_L,  // Pianus (left)
             8130100,  // Jr. Balrog
             8220004,  // Dodo
             8220005,  // Lilynouch
@@ -139,8 +141,8 @@ public record AreaBossRegistry(List<AreaBossSpawn> spawns, Set<Integer> overrida
             // --- WZ-SpawnPoint bosses (original 8) ---
             new AreaBossSpawn(240020401, 8180000, -7, 444, "Manon has appeared."),
             new AreaBossSpawn(240020101, 8180001, 0, 432, "Griffey has appeared."),
-            new AreaBossSpawn(230040420, 8510000, 568, 133, "Pianus has appeared."),
-            new AreaBossSpawn(230040420, 8520000, -459, 133, "Pianus has appeared."),
+            new AreaBossSpawn(230040420, MobId.PIANUS_R, 568, 133, "Pianus has appeared."),
+            new AreaBossSpawn(230040420, MobId.PIANUS_L, -459, 133, "Pianus has appeared."),
             new AreaBossSpawn(105090900, 8130100, 113, 83, "Jr. Balrog has appeared."),
             new AreaBossSpawn(270010500, 8220004, 280, -938, "Dodo has appeared."),
             new AreaBossSpawn(270020500, 8220005, 66, -921, "Lilynouch has appeared."),

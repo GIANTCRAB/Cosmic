@@ -14,10 +14,12 @@ import tools.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -148,6 +150,138 @@ class EquipStatUpgradeSelectionTest {
 
         assertTrue(candidates.contains(Equip.StatUpgrade.incPAD));
         assertEquals(List.of(Equip.StatUpgrade.incPAD, Equip.StatUpgrade.incEVA, Equip.StatUpgrade.incACC), candidates);
+    }
+
+    // --- getMaxedStats: stats at/above MAX_EQUIPMNT_STAT must be flagged for exclusion ---
+
+    private static final int MAX_STAT = 32767;
+
+    @Test
+    void getMaxedStatsReturnsEmptyWhenAllBelowMax() {
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 100, (short) 100, (short) 100, (short) 100,
+                (short) 100, (short) 100, (short) 100, (short) 100,
+                (short) 100, (short) 100, (short) 100, (short) 100,
+                (short) 100, (short) 100, MAX_STAT);
+
+        assertTrue(maxed.isEmpty());
+    }
+
+    @Test
+    void getMaxedStatsReturnsExactlyTheMaxedStats() {
+        // watk and luk are maxed; everything else is well below.
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 0, (short) 5, (short) 0, (short) MAX_STAT,
+                (short) 0, (short) 0, (short) MAX_STAT, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, MAX_STAT);
+
+        assertEquals(EnumSet.of(Equip.StatUpgrade.incLUK, Equip.StatUpgrade.incPAD), maxed);
+    }
+
+    @Test
+    void getMaxedStatsBoundaryAtExactlyMaxIsMaxed() {
+        // A stat sitting exactly at the cap counts as maxed (>=), so it is excluded.
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) MAX_STAT, MAX_STAT);
+
+        assertEquals(EnumSet.of(Equip.StatUpgrade.incJump), maxed);
+    }
+
+    @Test
+    void getMaxedStatsBoundaryOneBelowMaxIsNotMaxed() {
+        // maxStat - 1 is still upgradeable, so it must NOT be flagged.
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) (MAX_STAT - 1), MAX_STAT);
+
+        assertTrue(maxed.isEmpty());
+    }
+
+    @Test
+    void getMaxedStatsFlagsEveryStatIndependently() {
+        // Param order of getMaxedStats: str, dex, _int, luk, hp, mp, watk, matk,
+        // wdef, mdef, acc, avoid, speed, jump. Map each stat to that positional index.
+        Map<Equip.StatUpgrade, Integer> paramIndex = new HashMap<>();
+        paramIndex.put(Equip.StatUpgrade.incSTR, 0);
+        paramIndex.put(Equip.StatUpgrade.incDEX, 1);
+        paramIndex.put(Equip.StatUpgrade.incINT, 2);
+        paramIndex.put(Equip.StatUpgrade.incLUK, 3);
+        paramIndex.put(Equip.StatUpgrade.incMHP, 4);
+        paramIndex.put(Equip.StatUpgrade.incMMP, 5);
+        paramIndex.put(Equip.StatUpgrade.incPAD, 6);
+        paramIndex.put(Equip.StatUpgrade.incMAD, 7);
+        paramIndex.put(Equip.StatUpgrade.incPDD, 8);
+        paramIndex.put(Equip.StatUpgrade.incMDD, 9);
+        paramIndex.put(Equip.StatUpgrade.incACC, 10);
+        paramIndex.put(Equip.StatUpgrade.incEVA, 11);
+        paramIndex.put(Equip.StatUpgrade.incSpeed, 12);
+        paramIndex.put(Equip.StatUpgrade.incJump, 13);
+
+        for (Equip.StatUpgrade s : paramIndex.keySet()) {
+            short[] v = new short[14];
+            v[paramIndex.get(s)] = (short) MAX_STAT;
+            Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                    v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7],
+                    v[8], v[9], v[10], v[11], v[12], v[13], MAX_STAT);
+            assertEquals(EnumSet.of(s), maxed, "Stat " + s + " not flagged when maxed");
+        }
+    }
+
+    @Test
+    void maxedStatIsExcludedFromUpgradeCandidates() {
+        // End-to-end: a stat that is both > 0 and >= maxStat is present in raw candidates
+        // but must be removed once maxed stats are filtered out (mirrors getUpgradeCandidates).
+        short watk = MAX_STAT;   // > 0 AND maxed
+        List<Equip.StatUpgrade> raw = Equip.buildUpgradeCandidates(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, watk, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0);
+        assertEquals(List.of(Equip.StatUpgrade.incPAD), raw);
+
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, watk, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, MAX_STAT);
+
+        List<Equip.StatUpgrade> filtered = new ArrayList<>(raw);
+        filtered.removeAll(maxed);
+
+        assertTrue(filtered.isEmpty(), "Maxed stat was not excluded from candidates");
+    }
+
+    @Test
+    void selectStatsToUpgradeNeverPicksAMaxedStat() {
+        // After filtering, the maxed stat must never be selected in either mode.
+        short watk = MAX_STAT;
+        List<Equip.StatUpgrade> raw = Equip.buildUpgradeCandidates(
+                (short) 1, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, watk, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0);
+        Set<Equip.StatUpgrade> maxed = Equip.getMaxedStats(
+                (short) 1, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, watk, (short) 0,
+                (short) 0, (short) 0, (short) 0, (short) 0,
+                (short) 0, (short) 0, MAX_STAT);
+
+        List<Equip.StatUpgrade> filtered = new ArrayList<>(raw);
+        filtered.removeAll(maxed);
+
+        // Only STR survives; WATK is maxed and gone.
+        assertEquals(List.of(Equip.StatUpgrade.incSTR), filtered);
+        assertEquals(List.of(Equip.StatUpgrade.incSTR), Equip.selectStatsToUpgrade(filtered, true));
+        for (int i = 0; i < 5_000; i++) {
+            assertFalse(Equip.selectStatsToUpgrade(filtered, false).contains(Equip.StatUpgrade.incPAD),
+                    "Maxed WATK was picked in single-stat mode");
+        }
     }
 
     @Test

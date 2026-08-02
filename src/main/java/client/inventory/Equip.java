@@ -33,10 +33,12 @@ import tools.Pair;
 import tools.Randomizer;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class Equip extends Item {
@@ -394,8 +396,11 @@ public class Equip extends Item {
     }
 
     private List<StatUpgrade> getUpgradeCandidates() {
-        return buildUpgradeCandidates(str, dex, _int, luk, hp, mp, watk, matk,
+        List<StatUpgrade> candidates = buildUpgradeCandidates(str, dex, _int, luk, hp, mp, watk, matk,
                 wdef, mdef, acc, avoid, speed, jump);
+        candidates.removeAll(getMaxedStats(str, dex, _int, luk, hp, mp, watk, matk,
+                wdef, mdef, acc, avoid, speed, jump, YamlConfig.config.server.MAX_EQUIPMNT_STAT));
+        return candidates;
     }
 
     static List<StatUpgrade> buildUpgradeCandidates(short str, short dex, short _int, short luk,
@@ -446,6 +451,56 @@ public class Equip extends Item {
             candidates.add(StatUpgrade.incJump);
         }
         return candidates;
+    }
+
+    static Set<StatUpgrade> getMaxedStats(short str, short dex, short _int, short luk,
+                                          short hp, short mp, short watk, short matk,
+                                          short wdef, short mdef, short acc, short avoid,
+                                          short speed, short jump, int maxStat) {
+        Set<StatUpgrade> maxed = EnumSet.noneOf(StatUpgrade.class);
+        if (dex >= maxStat) {
+            maxed.add(StatUpgrade.incDEX);
+        }
+        if (str >= maxStat) {
+            maxed.add(StatUpgrade.incSTR);
+        }
+        if (_int >= maxStat) {
+            maxed.add(StatUpgrade.incINT);
+        }
+        if (luk >= maxStat) {
+            maxed.add(StatUpgrade.incLUK);
+        }
+        if (hp >= maxStat) {
+            maxed.add(StatUpgrade.incMHP);
+        }
+        if (mp >= maxStat) {
+            maxed.add(StatUpgrade.incMMP);
+        }
+        if (watk >= maxStat) {
+            maxed.add(StatUpgrade.incPAD);
+        }
+        if (matk >= maxStat) {
+            maxed.add(StatUpgrade.incMAD);
+        }
+        if (wdef >= maxStat) {
+            maxed.add(StatUpgrade.incPDD);
+        }
+        if (mdef >= maxStat) {
+            maxed.add(StatUpgrade.incMDD);
+        }
+        if (avoid >= maxStat) {
+            maxed.add(StatUpgrade.incEVA);
+        }
+        if (acc >= maxStat) {
+            maxed.add(StatUpgrade.incACC);
+        }
+        if (speed >= maxStat) {
+            maxed.add(StatUpgrade.incSpeed);
+        }
+        if (jump >= maxStat) {
+            maxed.add(StatUpgrade.incJump);
+        }
+        return maxed;
     }
 
     static List<StatUpgrade> selectStatsToUpgrade(List<StatUpgrade> candidates, boolean power) {
