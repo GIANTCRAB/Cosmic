@@ -24,6 +24,7 @@ package client.inventory;
 import client.Character;
 import client.Client;
 import client.inventory.manipulator.InventoryManipulator;
+import client.processor.InventorySlotProcessor;
 import constants.inventory.ItemConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class Inventory implements Iterable<Item> {
     public int getSlotLimit() {
         lock.lock();
         try {
-            return slotLimit;
+            return Math.min(slotLimit, InventorySlotProcessor.maxSlots());
         } finally {
             lock.unlock();
         }
@@ -83,7 +84,7 @@ public class Inventory implements Iterable<Item> {
     public void setSlotLimit(int newLimit) {
         lock.lock();
         try {
-            if (newLimit < slotLimit) {
+            if (newLimit < getSlotLimit()) {
                 List<Short> toRemove = new LinkedList<>();
                 for (Item it : list()) {
                     if (it.getPosition() > newLimit) {
@@ -365,7 +366,7 @@ public class Inventory implements Iterable<Item> {
     public boolean isFull() {
         lock.lock();
         try {
-            return inventory.size() >= slotLimit;
+            return inventory.size() >= getSlotLimit();
         } finally {
             lock.unlock();
         }
@@ -374,8 +375,7 @@ public class Inventory implements Iterable<Item> {
     public boolean isFull(int margin) {
         lock.lock();
         try {
-            //System.out.print("(" + inventory.size() + " " + margin + " <> " + slotLimit + ")");
-            return inventory.size() + margin >= slotLimit;
+            return inventory.size() + margin >= getSlotLimit();
         } finally {
             lock.unlock();
         }
@@ -384,8 +384,7 @@ public class Inventory implements Iterable<Item> {
     public boolean isFullAfterSomeItems(int margin, int used) {
         lock.lock();
         try {
-            //System.out.print("(" + inventory.size() + " " + margin + " <> " + slotLimit + " -" + used + ")");
-            return inventory.size() + margin >= slotLimit - used;
+            return inventory.size() + margin >= getSlotLimit() - used;
         } finally {
             lock.unlock();
         }
@@ -398,7 +397,7 @@ public class Inventory implements Iterable<Item> {
 
         lock.lock();
         try {
-            for (short i = 1; i <= slotLimit; i++) {
+            for (short i = 1; i <= getSlotLimit(); i++) {
                 if (!inventory.containsKey(i)) {
                     return i;
                 }
@@ -417,7 +416,7 @@ public class Inventory implements Iterable<Item> {
         lock.lock();
         try {
             short free = 0;
-            for (short i = 1; i <= slotLimit; i++) {
+            for (short i = 1; i <= getSlotLimit(); i++) {
                 if (!inventory.containsKey(i)) {
                     free++;
                 }

@@ -9,22 +9,55 @@
  */
 package client.inventory;
 
+import config.YamlConfig;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class InventoryTest {
+    private int previousMaxSlots;
+
+    @BeforeEach
+    void saveMaxSlots() {
+        previousMaxSlots = YamlConfig.config.server.MAX_INVENTORY_SLOTS;
+    }
+
+    @AfterEach
+    void restoreMaxSlots() {
+        YamlConfig.config.server.MAX_INVENTORY_SLOTS = previousMaxSlots;
+    }
 
     @Test
     void slotLimitRetainsValueAboveOldByteCeiling() {
-        Inventory inv = new Inventory(null, InventoryType.USE, 200);
-        assertEquals(200, inv.getSlotLimit());
+        final var limit = 200;
+        YamlConfig.config.server.MAX_INVENTORY_SLOTS = limit;
+        final var inv = new Inventory(null, InventoryType.USE, limit);
+        assertEquals(limit, inv.getSlotLimit());
+    }
+
+    @Test
+    void slotLimitRespectsMaxInventorySlots() {
+        YamlConfig.config.server.MAX_INVENTORY_SLOTS = 96;
+        final var inv = new Inventory(null, InventoryType.USE, 200);
+        assertEquals(YamlConfig.config.server.MAX_INVENTORY_SLOTS, inv.getSlotLimit());
     }
 
     @Test
     void setSlotLimitRoundTripsAboveOldByteCeiling() {
-        Inventory inv = new Inventory(null, InventoryType.ETC, 24);
+        final var limit = 250;
+        YamlConfig.config.server.MAX_INVENTORY_SLOTS = limit;
+        final var inv = new Inventory(null, InventoryType.ETC, 24);
+        inv.setSlotLimit(limit);
+        assertEquals(limit, inv.getSlotLimit());
+    }
+
+    @Test
+    void setSlotLimitRespectsMaxInventorySlots() {
+        YamlConfig.config.server.MAX_INVENTORY_SLOTS = 96;
+        final var inv = new Inventory(null, InventoryType.ETC, 24);
         inv.setSlotLimit(250);
-        assertEquals(250, inv.getSlotLimit());
+        assertEquals(YamlConfig.config.server.MAX_INVENTORY_SLOTS, inv.getSlotLimit());
     }
 }
