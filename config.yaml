@@ -12,7 +12,7 @@ worlds:
     meso_rate: 10
     drop_rate: 10
     boss_drop_rate: 10                      #NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
-    melee_boosted_drop_rate: 2              #Multiplier for players with a physical melee weapon equipped when killing non-boss monsters that are >= EXP_SPLIT_LEVEL_INTERVAL levels below them. 1 = disabled.
+    melee_boosted_drop_rate: 3              #Multiplier for players with a physical melee weapon equipped when killing non-boss monsters that are >= EXP_SPLIT_LEVEL_INTERVAL levels below them. 1 = disabled.
     quest_rate: 5.0                           #Multiplier for Exp & Meso gains when completing a quest. Only available when USE_QUEST_RATE is true. Stacks with server Exp & Meso rates.
     fishing_rate: 10                        #Multiplier for success likelihood on meso thrown during fishing.
     travel_rate: 2                         #Means of transportation rides/departs using 1/N of the default time.
@@ -359,9 +359,9 @@ server:
 
     #Other Skills Configuration
     USE_FULL_ARAN_SKILLSET: false   #Enables starter availability to all Aran job skills. Suggestion thanks to Masterrulax.
-    USE_FAST_REUSE_HERO_WILL: false  #Greatly reduce cooldown on Hero's Will.
+    USE_FAST_REUSE_HERO_WILL: true  #Greatly reduce cooldown on Hero's Will.
     USE_ANTI_IMMUNITY_CRASH: false   #Crash skills additionally removes the mob's invincibility buffs. Suggestion thanks to Celestial.
-    USE_UNDISPEL_HOLY_SHIELD: false  #Holy shield buff also prevents players from suffering dispel from mobs.
+    USE_UNDISPEL_HOLY_SHIELD: true  #Holy shield buff also prevents players from suffering dispel from mobs.
     USE_FULL_HOLY_SYMBOL: false      #Holy symbol doesn't require EXP sharers to work in full.
 
     #Character Configuration
