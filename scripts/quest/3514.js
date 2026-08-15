@@ -23,9 +23,19 @@
  * The sorcerer who sells emotions
 */
 
+const HardcoreProcessor = Java.type('client.processor.HardcoreProcessor');
+
+const HARDCORE_COMPLETION_COST = 2000000000;
+const QUEST_EXP = 891500;
+
 var status = -1;
 
 function start(mode, type, selection) {
+    if (HardcoreProcessor.isHardcoreModeEnabled()) {
+        startHardcoreMode(mode);
+        return;
+    }
+
     if (qm.getPlayer().getMeso() >= 1000000) {
         if (qm.canHold(2022337, 1)) {
             qm.gainItem(2022337, 1);
@@ -41,6 +51,32 @@ function start(mode, type, selection) {
     }
 
     qm.dispose();
+}
+
+function startHardcoreMode(mode) {
+    if (mode != 1) {
+        qm.dispose();
+        return;
+    }
+
+    status++;
+
+    if (status == 0) {
+        qm.sendYesNo("That potion's side effect would be fatal in Hardcore Mode. I can thaw your emotions without it for #r2,000,000,000 mesos#k instead. Do you want to pay?");
+    } else if (status == 1) {
+        if (qm.getMeso() < HARDCORE_COMPLETION_COST) {
+            qm.sendOk("You don't have enough money. I charge #r2,000,000,000 mesos#k to thaw your emotions safely.");
+            qm.dispose();
+            return;
+        }
+
+        qm.gainMeso(-HARDCORE_COMPLETION_COST);
+        qm.forceStartQuest();
+        qm.gainExp(QUEST_EXP);
+        qm.forceCompleteQuest();
+        qm.sendOk("Your emotions are no longer frozen. We never need to speak of that potion again.");
+        qm.dispose();
+    }
 }
 
 function usedPotion(ch) {
@@ -77,7 +113,7 @@ function end(mode, type, selection) {
             qm.sendOk("It seems the potion worked and your emotions are no longer frozen. And, oh, my... You're ailing bad, #bpurge#k that out quickly.");
         }
     } else if (status == 1) {
-        qm.gainExp(891500);
+        qm.gainExp(QUEST_EXP);
         qm.completeQuest(3514);
         qm.dispose();
     }
