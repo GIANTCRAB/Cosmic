@@ -7896,8 +7896,6 @@ public class Character extends AbstractCharacterObject {
             equipchanged = false;
         }
 
-        localmaxhp += equipmaxhp;
-        localmaxmp += equipmaxmp;
         localdex += equipdex;
         localint_ += equipint_;
         localstr += equipstr;
@@ -7977,8 +7975,6 @@ public class Character extends AbstractCharacterObject {
         chrLock.lock();
         statWlock.lock();
         try {
-            localmaxhp = getMaxHp();
-            localmaxmp = getMaxMp();
             localdex = getDex();
             localint_ = getInt();
             localstr = getStr();
@@ -7994,16 +7990,9 @@ public class Character extends AbstractCharacterObject {
             localmagic = Math.min(localmagic, 2000);
 
             Integer hbhp = getBuffedValue(BuffStat.HYPERBODYHP);
-            if (hbhp != null) {
-                localmaxhp += (hbhp.doubleValue() / 100) * localmaxhp;
-            }
             Integer hbmp = getBuffedValue(BuffStat.HYPERBODYMP);
-            if (hbmp != null) {
-                localmaxmp += (hbmp.doubleValue() / 100) * localmaxmp;
-            }
-
-            localmaxhp = Math.min(30000, localmaxhp);
-            localmaxmp = Math.min(30000, localmaxmp);
+            localmaxhp = HpMpStats.effectiveMaximum(getMaxHp(), equipmaxhp, hbhp);
+            localmaxmp = HpMpStats.effectiveMaximum(getMaxMp(), equipmaxmp, hbmp);
 
             StatEffect combo = getBuffEffect(BuffStat.ARAN_COMBO);
             if (combo != null) {
@@ -8603,6 +8592,9 @@ public class Character extends AbstractCharacterObject {
                     effLock.lock();
                     statWlock.lock();
                     try {
+                        log.debug("Binding character stats: character={} instance={} trueMaxHP={} trueMaxMP={} "
+                                        + "hp={} mp={} poolAP={} availableAP={}",
+                                id, System.identityHashCode(this), maxhp, maxmp, hp, mp, hpMpApUsed, remainingAp);
                         ps.setInt(3, str);
                         ps.setInt(4, dex);
                         ps.setInt(5, luk);
@@ -8623,6 +8615,7 @@ public class Character extends AbstractCharacterObject {
                         ps.setString(13, sp.substring(0, sp.length() - 1));
 
                         ps.setInt(14, remainingAp);
+                        ps.setInt(23, hpMpApUsed);
                     } finally {
                         statWlock.unlock();
                         effLock.unlock();
@@ -8644,7 +8637,6 @@ public class Character extends AbstractCharacterObject {
                         }
                     }
                     ps.setInt(22, meso.get());
-                    ps.setInt(23, hpMpApUsed);
                     if (map == null || map.getId() == MapId.CRIMSONWOOD_VALLEY_1 || map.getId() == MapId.CRIMSONWOOD_VALLEY_2) {  // reset to first spawnpoint on those maps
                         ps.setInt(24, 0);
                     } else {
@@ -9286,7 +9278,7 @@ public class Character extends AbstractCharacterObject {
 
     private int calcHpRatioUpdate(int curpoint, int maxpoint, int diffpoint) {
         int curMax = maxpoint;
-        int nextMax = Math.min(30000, maxpoint + diffpoint);
+        int nextMax = HpMpStats.cap((long) maxpoint + diffpoint);
 
         float temp = curpoint * nextMax;
         int ret = (int) Math.ceil(temp / curMax);
@@ -9297,7 +9289,7 @@ public class Character extends AbstractCharacterObject {
 
     private int calcMpRatioUpdate(int curpoint, int maxpoint, int diffpoint) {
         int curMax = maxpoint;
-        int nextMax = Math.min(30000, maxpoint + diffpoint);
+        int nextMax = HpMpStats.cap((long) maxpoint + diffpoint);
 
         float temp = curpoint * nextMax;
         int ret = (int) Math.ceil(temp / curMax);

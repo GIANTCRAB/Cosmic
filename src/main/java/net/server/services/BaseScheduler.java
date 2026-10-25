@@ -105,18 +105,24 @@ public abstract class BaseScheduler {
             }
         }
 
+        List<Object> removed = new LinkedList<>();
         if (!toRemove.isEmpty()) {
             lockScheduler();
             try {
                 for (Object o : toRemove) {
-                    registeredEntries.remove(o);
+                    // An action may register a replacement while this snapshot is executing.
+                    // Compare registration identity: equal action/deadline values can still be new work.
+                    if (registeredEntries.get(o) == registeredEntriesCopy.get(o)) {
+                        registeredEntries.remove(o);
+                        removed.add(o);
+                    }
                 }
             } finally {
                 unlockScheduler();
             }
         }
 
-        dispatchRemovedEntries(toRemove, true);
+        dispatchRemovedEntries(removed, true);
     }
 
     protected void registerEntry(Object key, Runnable removalAction, long duration) {

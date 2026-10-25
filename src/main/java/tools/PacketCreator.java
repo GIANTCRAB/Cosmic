@@ -28,6 +28,7 @@ import client.Client;
 import client.Disease;
 import client.FamilyEntitlement;
 import client.FamilyEntry;
+import client.HpMpStats;
 import client.MonsterBook;
 import client.Mount;
 import client.QuestStatus;
@@ -205,10 +206,10 @@ public class PacketCreator {
         p.writeShort(chr.getDex() + chr.catchupBonusForStat(chr.getDex())); // dex
         p.writeShort(chr.getInt() + chr.catchupBonusForStat(chr.getInt())); // int
         p.writeShort(chr.getLuk() + chr.catchupBonusForStat(chr.getLuk())); // luk
-        p.writeShort(chr.getHp()); // hp (?)
-        p.writeShort(chr.getClientMaxHp()); // maxhp
-        p.writeShort(chr.getMp()); // mp (?)
-        p.writeShort(chr.getClientMaxMp()); // maxmp
+        p.writeShort(HpMpStats.cap(chr.getHp())); // hp (?)
+        p.writeShort(HpMpStats.cap(chr.getClientMaxHp())); // maxhp
+        p.writeShort(HpMpStats.cap(chr.getMp())); // mp (?)
+        p.writeShort(HpMpStats.cap(chr.getClientMaxMp())); // maxmp
         p.writeShort(chr.getRemainingAp()); // remaining ap
         if (GameConstants.hasSPTable(chr.getJob())) {
             addRemainingSkillInfo(p, chr);
@@ -1050,6 +1051,9 @@ public class PacketCreator {
                     Stat statType = statupdate.getLeft();
                     if (statType == Stat.STR || statType == Stat.DEX || statType == Stat.INT || statType == Stat.LUK) {
                         statValue += chr.catchupBonusForStat(statValue);
+                    } else if (statType == Stat.HP || statType == Stat.MP
+                            || statType == Stat.MAXHP || statType == Stat.MAXMP) {
+                        statValue = HpMpStats.cap(statValue);
                     }
                     p.writeShort(statValue);
                 } else if (statupdate.getLeft().getValue() == 0x20000) {

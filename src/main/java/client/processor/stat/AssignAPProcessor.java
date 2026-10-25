@@ -487,119 +487,63 @@ public class AssignAPProcessor {
         c.lockClient();
         try {
             Character player = c.getPlayer();
-
-            switch (APFrom) {
-                case 64: // str
-                    if (player.getStr() < 5) {
-                        player.message("You don't have the minimum STR required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    if (!player.assignStr(-1)) {
-                        player.message("Couldn't execute AP reset operation.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    break;
-                case 128: // dex
-                    if (player.getDex() < 5) {
-                        player.message("You don't have the minimum DEX required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    if (!player.assignDex(-1)) {
-                        player.message("Couldn't execute AP reset operation.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    break;
-                case 256: // int
-                    if (player.getInt() < 5) {
-                        player.message("You don't have the minimum INT required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    if (!player.assignInt(-1)) {
-                        player.message("Couldn't execute AP reset operation.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    break;
-                case 512: // luk
-                    if (player.getLuk() < 5) {
-                        player.message("You don't have the minimum LUK required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    if (!player.assignLuk(-1)) {
-                        player.message("Couldn't execute AP reset operation.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-                    break;
-                case 2048: // HP
-                    if (YamlConfig.config.server.USE_ENFORCE_HPMP_SWAP) {
-                        if (APTo != 8192) {
-                            player.message("You can only swap HP ability points to MP.");
-                            c.sendPacket(PacketCreator.enableActions());
-                            return false;
-                        }
-                    }
-
-                    if (player.getHpMpApUsed() < 1) {
-                        player.message("You don't have enough HPMP stat points to spend on AP Reset.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-
-                    int hplose = -takeHp(player.getJob());
-                    if (player.getMaxHp() + hplose < getMinHp(player.getJob(), player.getLevel())) {
-                        player.message("You don't have the minimum HP pool required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-
-                    int curHp = player.getHp();
-                    player.assignHP(hplose, -1);
-                    if (!YamlConfig.config.server.USE_FIXED_RATIO_HPMP_UPDATE) {
-                        player.updateHp(Math.max(1, curHp + hplose));
-                    }
-
-                    break;
-                case 8192: // MP
-                    if (YamlConfig.config.server.USE_ENFORCE_HPMP_SWAP) {
-                        if (APTo != 2048) {
-                            player.message("You can only swap MP ability points to HP.");
-                            c.sendPacket(PacketCreator.enableActions());
-                            return false;
-                        }
-                    }
-
-                    if (player.getHpMpApUsed() < 1) {
-                        player.message("You don't have enough HPMP stat points to spend on AP Reset.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-
-                    int mplose = -takeMp(player.getJob());
-                    if (player.getMaxMp() + mplose < getMinMp(player.getJob(), player.getLevel())) {
-                        player.message("You don't have the minimum MP pool required to swap.");
-                        c.sendPacket(PacketCreator.enableActions());
-                        return false;
-                    }
-
-                    int curMp = player.getMp();
-                    player.assignMP(mplose, -1);
-                    if (!YamlConfig.config.server.USE_FIXED_RATIO_HPMP_UPDATE) {
-                        player.updateMp(Math.max(0, curMp + mplose));
-                    }
-                    break;
-                default:
-                    c.sendPacket(PacketCreator.updatePlayerStats(PacketCreator.EMPTY_STATUPDATE, true, player));
-                    return false;
+            Stat from = Stat.getByValue(APFrom), to = Stat.getByValue(APTo);
+            if (from == null || to == null) {
+                c.sendPacket(PacketCreator.enableActions());
+                return false;
             }
 
-            addStat(player, APTo, true);
+            if (YamlConfig.config.server.USE_ENFORCE_HPMP_SWAP
+                    && ((from == Stat.MAXHP && to != Stat.MAXMP) || (from == Stat.MAXMP && to != Stat.MAXHP))) {
+                player.message(from == Stat.MAXHP ? "You can only swap HP ability points to MP."
+                        : "You can only swap MP ability points to HP.");
+                c.sendPacket(PacketCreator.enableActions());
+                return false;
+            }
+
+            int sourceLoss = switch (from) {
+                case MAXHP -> takeHp(player.getJob());
+                case MAXMP -> takeMp(player.getJob());
+                default -> 1;
+            };
+            int minHp = getMinHp(player.getJob(), player.getLevel());
+            int minMp = getMinMp(player.getJob(), player.getLevel());
+            String sourceError = switch (from) {
+                case STR -> player.getStr() < 5 ? "You don't have the minimum STR required to swap." : null;
+                case DEX -> player.getDex() < 5 ? "You don't have the minimum DEX required to swap." : null;
+                case INT -> player.getInt() < 5 ? "You don't have the minimum INT required to swap." : null;
+                case LUK -> player.getLuk() < 5 ? "You don't have the minimum LUK required to swap." : null;
+                case MAXHP, MAXMP -> {
+                    if (player.getHpMpApUsed() < 1) {
+                        yield "You don't have enough HPMP stat points to spend on AP Reset.";
+                    }
+                    if (from == Stat.MAXHP && (long) player.getMaxHp() - sourceLoss < minHp) {
+                        yield "You don't have the minimum HP pool required to swap.";
+                    }
+                    if (from == Stat.MAXMP && (long) player.getMaxMp() - sourceLoss < minMp) {
+                        yield "You don't have the minimum MP pool required to swap.";
+                    }
+                    yield null;
+                }
+                default -> null;
+            };
+            if (sourceError != null) {
+                player.message(sourceError);
+                c.sendPacket(PacketCreator.enableActions());
+                return false;
+            }
+
+            int destinationGain = switch (to) {
+                case MAXHP -> calcHpChange(player, true);
+                case MAXMP -> calcMpChange(player, true);
+                default -> 1;
+            };
+            // Revalidate both sides under the stat locks before mutating either one.
+            if (!player.applyApReset(from, to, sourceLoss, destinationGain, minHp, minMp)) {
+                player.message("Couldn't execute AP reset operation.");
+                c.sendPacket(PacketCreator.enableActions());
+                return false;
+            }
             return true;
         } finally {
             c.unlockClient();

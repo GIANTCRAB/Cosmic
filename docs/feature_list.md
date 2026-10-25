@@ -212,7 +212,8 @@ Server potentials:
 * Centralized getcurrenttime throughout several server handlers, boosting it's performance overall.
 * Centralized server timestamping, several timestamps received from clients are now unused, preventing some spammable exploits.
 * Autosaver (periodically saves on DB current state of every player in-game).
-* Both fixed and randomized versions of HP/MP growth rate available, regarding player job (enable one at ServerConstants). Placeholder for HP/MP washing feature.
+* Job-specific fixed or randomized HP/MP growth (`USE_RANDOMIZE_HPMP_GAIN` in `config.yaml`) and HP/MP washing.
+* Permanent HP/MP maximums retain integer gains above 30,000. Combat maximums and client-facing stats are capped at 30,000; AP resets spend the true maximum and apply both stat changes atomically.
 * Implemented methods to get the current Players' MaxHP/MaxMP method with equipment HP/MP gains already summed up.
 * Reallocated mapobjectids utilization throughout the source, preventing issues such as "NPC disappearing mysteriously after some server time" from happening.
 * Implemented old GMS AP assigning for novices level 10 or below. Usage of the edited localhost is mandatory on this.
